@@ -3,14 +3,20 @@ WRSI_USGS_plots_SA
 ;this script makes plots of the LIS-WRSI (CHIRPS) similar to what is found on the USGS website
 ;WRSI and WRSI anomalies
 ;1/23/16 revisit for SAfrica forecasts
+;2/20/16 use for Dalia's GPM SOS plots
 
 ;make the wrsi color table available
-wkdir = '/home/source/mcnally/scripts_idl/'
+;wkdir = '/home/source/mcnally/scripts_idl/'
+wkdir = '/data0/almcnall/scripts_idl'
+
 cd, wkdir
 .compile make_wrsi_cmap.pro
+.compile make_sos_cmap.pro
 
-;indir = '/home/chg-mcnally/LISWRSI_OUTPUT/LIS7/'
-indir = '/home/sandbox/people/mcnally/WRSI_Sep2Feb_SA/'
+
+;indir = '/home/sandbox/people/mcnally/WRSI_Sep2Feb_SA/'
+indir = '/data0/almcnall/data/'
+
 
 ;read in the historic EOS so I am make the median
 ifile = file_search(indir+'WRSI_EOS_*.nc')
@@ -157,37 +163,29 @@ class(above) = 150
   p1 = MAPCONTINENTS(/COUNTRIES,  COLOR = [120, 120, 120])
   
   ;;make the SOS plots for souther africa that look like USGS:
-  indir = '/home/sandbox/people/mcnally/GPM_SOS4Dalia/'
-  ifile = file_search(indir+'/RFE2_SOS_current_2016.d01.bil') & print, ifile
-  ifile2 = file_search(indir+'/CHIRPS_SOS_current_2016.d01.bil') & print, ifile
-  ifile3 = file_search(indir+'/LIS_HIST*') & print, ifile3
+  ;indir = '/home/sandbox/people/mcnally/GPM_SOS4Dalia/'
+  indir='/data0/almcnall/data/'
+  ifile1 = file_search(indir+'/RFE_LIS_HIST_201602202330.d01.nc') & print, ifile1
+  ifile2 = file_search(indir+'/CHIRPS_LIS_HIST_201602202330.d01.nc') & print, ifile2
+  IFILE3 = FILE_SEARCH(INDIR+'/IMERG_LIS_HIST_201602202330.d01.nc') & PRINT, IFILE3
 
   NX = 486
   NY = 443
 
-  ingrid = ulonarr(NX,NY)
-  openr,1,ifile
-  readu,1,ingrid
-  close,1
-  ingrid = float(ingrid)
-  ingrid(where(ingrid gt 60))=!values.f_nan
-  
-  ingrid2 = ulonarr(NX,NY)
-  openr,1,ifile2
-  readu,1,ingrid2
-  close,1
-  ingrid2 = float(ingrid2)
-  ingrid2(where(ingrid2 gt 60))=!values.f_nan
-  
-  fileID = ncdf_open(ifile3, /nowrite) &$
-    sosID = ncdf_varid(fileID,'SOS_inst') &$
-    ncdf_varget,fileID, sosID, SOS
-SOS = reverse(SOS,2) 
- SOS(where(SOS lt 0))=!values.f_nan
-
-
-  
-  temp = image(reverse(SOS-ingrid,2),min_value=-60, max_value=60, rgb_table=4)
+;  ingrid = ulonarr(NX,NY)
+;  openr,1,ifile
+;  readu,1,ingrid
+;  close,1
+;  ingrid = float(ingrid)
+;  ingrid(where(ingrid gt 60))=!values.f_nan
+    
+fileID = ncdf_open(ifile1, /nowrite) &$
+sosID = ncdf_varid(fileID,'SOS_inst') &$
+ncdf_varget,fileID, sosID, SOS_RFE
+ 
+SOS_RFE(where(SOS_RFE lt 0))=!values.f_nan
+ 
+  temp = image(SOS_RFE,min_value=-60, max_value=60, rgb_table=4)
 
   
   ;South africa domain
@@ -205,8 +203,9 @@ SOS = reverse(SOS,2)
     index = [-2,1,3,6,9,18,21,24,27,30,33,36,46,56]+1;[0,20,60,100,140];  C_VALUE=index,,max_value=200,min_value=0,
     ;make these match with falkenmark
     w = WINDOW(DIMENSIONS=[700,900])
-    ct=colortable(38,/reverse)
-      tmptr = CONTOUR(reverse(SOS,2),FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
+    ;ct=colortable(38,/reverse)
+    ct=CONGRID(make_cmap(ncolors),3,256)
+      tmptr = CONTOUR(BYTE(SOS_RFE),FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
       RGB_TABLE=ct, ASPECT_RATIO=1, Xstyle=1,Ystyle=1,$ ;3x256 array
       /FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors), $
       ; TITLE=month[i],layout=[3,4,i+1], /CURRENT)  &$
