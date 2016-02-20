@@ -1,0 +1,7 @@
+gridtype = gaussian
+xsize    = 1760
+ysize    = 880
+xfirst   = 0
+xinc     = 0.205
+yfirst   = 0
+yinc     = 0.205

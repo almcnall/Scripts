@@ -1,0 +1,17 @@
+function diff = api(x,y,rain)
+%this is the API function, where x are the 3 coeff
+%y is the soil moisture to fit to and rain is the input.
+%if there is nothing to fit then what i am doing?
+
+beta = x(1);
+gamma = x(2);
+const = x(3);
+diff = zeros(length(y),1);
+
+for t = 1:length(y)
+    sum = 0;
+    for n = 0:min([6 t-1]) %go back over the last 6 dekads
+        sum = sum + gamma^n * rain(t-n);
+    end
+    diff(t) = beta * sum + const - y(t);
+end

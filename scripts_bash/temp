@@ -1,0 +1,3 @@
+sed -i 's/'EXPN28'/'EXPN29'/g' run_daily_list_EAwrsi.sh
+grep "EXPN29'" run_daily_list_EAwrsi.sh
+source run_daily_list_EAwrsi.sh 

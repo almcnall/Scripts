@@ -1,0 +1,11 @@
+
+
+:%s//\r/g
+
+where the  is done by typing
+Ctrl-v Ctrl-m
+
+
+
+
+
