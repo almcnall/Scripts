@@ -1,4 +1,4 @@
-#go to the run directory
+#go to the run directory#
 cd /discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/ROUTINE_RUNS_CM/
 restartdir=Noah33_CHIRPS_MERRA_EA/SURFACEMODEL
 
