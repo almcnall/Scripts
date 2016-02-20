@@ -1,0 +1,59 @@
+#go to the run directory
+cd /discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/ROUTINE_RUNS_CM/
+restartdir=Noah33_CHIRPS_MERRA_EA/SURFACEMODEL
+
+#change the start/end dates pretend that the chron job runs on the 25 of the month
+
+#now_date=$(date -d $string'01 UTC' +"%D")
+now_date=$(date -d "2016-01-25" "+%D")
+now_month=${now_date:0:2}
+now_year=20${now_date:6:2}
+echo $now_date $now_month $now_year
+
+
+oldst_date=$(date -d "2016-01-25 - 3 month" "+%D")
+#oldst_date=$(date --date='- 3 month' +"%D")
+  echo $oldst_date
+oldstartyr=20${oldst_date:6:2}
+  echo $oldstartyr
+oldstartmo=${oldst_date:0:2}
+  echo $oldstartmo
+
+newst_date=$(date -d "2016-01-25 - 2 month" "+%D")
+#newst_date=$(date --date='- 2 month' +"%D")
+newstartyr=20${newst_date:6:2}
+newstartmo=${newst_date:0:2}
+  echo $newstaryr $newstartmo 
+
+sed -i 's/\(Starting year: \+\)  '$oldstartyr'/\Starting year:                  '$newstartyr'/g' lis.config_MERRA_CHIRPS_EA_test
+sed -i 's/\(Starting month: \+\)  '$oldstartmo'/\Starting month:                '$newstartmo'/g' lis.config_MERRA_CHIRPS_EA_test
+
+oldend_date=$(date -d "2016-01-25 - 1 month" "+%D")
+#oldend_date=$(date --date='- 1 month' +"%D")
+oldendyr=20${oldend_date:6:2}
+oldendmo=${oldend_date:0:2}
+  echo $oldendyr $oldendmo
+
+newend_date=$(date -d "2016-01-25" "+%D")
+#newend_date=$now_date
+newendyr=20${newend_date:6:2}
+newendmo=${newend_date:0:2}
+  echo $newendyr $newendmo
+
+sed -i 's/\(Ending   year: \+\)  '$oldendyr'/\Starting year:                  '$newendyr'/g' lis.config_MERRA_CHIRPS_EA_test
+sed -i 's/\(Ending month: \+\)  '$oldendmo'/\Ending month:                '$newendmo'/g' lis.config_MERRA_CHIRPS_EA_test
+
+#change the restart file - there is a month lag here..
+oldrst_date=$(date -d "2016-01-25 - 4 month" "+%D")
+#oldrst_date=$(date --date='- 4 month' +"%D")
+oldRSTmo=${oldrst_date:0:2}
+oldRSTyr=20${oldrst_date:6:2}
+oldRSTfile=$( ls $restartdir/$oldRSTyr$oldRSTmo/LIS_R*)
+echo $oldRSTfile
+
+RSTfile=$( ls $restartdir/$oldstartyr$oldstartmo/LIS_R*)
+echo $RSTfile
+
+sed -i 's#\(Noah.3.3 restart file: \+\)  '$oldRSTfile'#\Noah.3.3 restart file:   '$RSTfile'#g' lis.config_MERRA_CHIRPS_EA_test
+#submit the job
+#sbatch slurm_merra_chirp2_ea_day_test.job
