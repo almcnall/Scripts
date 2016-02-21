@@ -6,16 +6,20 @@ WRSI_USGS_plots_SA
 ;2/20/16 use for Dalia's GPM SOS plots
 
 ;make the wrsi color table available
+;on Rain
 ;wkdir = '/home/source/mcnally/scripts_idl/'
-wkdir = '/data0/almcnall/scripts_idl'
+;on gs617
+;wkdir = '/data0/almcnall/scripts_idl'
+;on dali
+wkdir = '/home/almcnall/Scripts/scripts_idl/
 
 cd, wkdir
-.compile make_wrsi_cmap.pro
+;.compile make_wrsi_cmap.pro
 .compile make_sos_cmap.pro
 
-
 ;indir = '/home/sandbox/people/mcnally/WRSI_Sep2Feb_SA/'
-indir = '/data0/almcnall/data/'
+;indir = '/data0/almcnall/data/'
+indir = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/
 
 
 ;read in the historic EOS so I am make the median
@@ -164,7 +168,8 @@ class(above) = 150
   
   ;;make the SOS plots for souther africa that look like USGS:
   ;indir = '/home/sandbox/people/mcnally/GPM_SOS4Dalia/'
-  indir='/data0/almcnall/data/'
+  ;indir='/data0/almcnall/data/'
+  indir='/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/SOS4Dalia/'
   ifile1 = file_search(indir+'/RFE_LIS_HIST_201602202330.d01.nc') & print, ifile1
   ifile2 = file_search(indir+'/CHIRPS_LIS_HIST_201602202330.d01.nc') & print, ifile2
   IFILE3 = FILE_SEARCH(INDIR+'/IMERG_LIS_HIST_201602202330.d01.nc') & PRINT, IFILE3
@@ -182,11 +187,29 @@ class(above) = 150
 fileID = ncdf_open(ifile1, /nowrite) &$
 sosID = ncdf_varid(fileID,'SOS_inst') &$
 ncdf_varget,fileID, sosID, SOS_RFE
+
+fileID = ncdf_open(ifile2, /nowrite) &$
+  sosID = ncdf_varid(fileID,'SOS_inst') &$
+  ncdf_varget,fileID, sosID, SOS_CHP
+  
+fileID = ncdf_open(ifile3, /nowrite) &$
+ sosID = ncdf_varid(fileID,'SOS_inst') &$
+ ncdf_varget,fileID, sosID, SOS_GPM
  
 SOS_RFE(where(SOS_RFE lt 0))=!values.f_nan
- 
-  temp = image(SOS_RFE,min_value=-60, max_value=60, rgb_table=4)
+SOS_CHP(where(SOS_CHP lt 0))=!values.f_nan
+SOS_GPM(where(SOS_GPM lt 0))=!values.f_nan
 
+temp = image(SOS_RFE-SOS_GPM,min_value=-10, max_value=10, rgb_table=4)
+;ok, I want the colorbar to start in September and End in Feb
+add = where(SOS_RFE gt 0 AND SOS_RFE lt 25)
+SOS_RFE(add)=SOS_RFE(add)+36
+
+add = where(SOS_CHP gt 0 AND SOS_CHP lt 25)
+SOS_CHP(add)=SOS_CHP(add)+36
+
+add = where(SOS_GPM gt 0 AND SOS_GPM lt 25)
+SOS_GPM(add)=SOS_GPM(add)+36
   
   ;South africa domain
   map_ulx = 6.05 & map_lrx = 54.55
@@ -198,23 +221,26 @@ SOS_RFE(where(SOS_RFE lt 0))=!values.f_nan
   gNY = lry - uly + 2
 
 
-    ncolors = 14
-    RGB_INDICES=[-2,1,3,6,9,18,21,24,27,30,33,36,46,56]+1
-    index = [-2,1,3,6,9,18,21,24,27,30,33,36,46,56]+1;[0,20,60,100,140];  C_VALUE=index,,max_value=200,min_value=0,
+    ncolors = 38
+    RGB_INDICES=indgen(60-22)+23
+    index=RGB_INDICES
+    ;index = [-2,1,3,6,9,18,21,24,27,30,33,36,46,56]+1;[0,20,60,100,140];  C_VALUE=index,,max_value=200,min_value=0,
     ;make these match with falkenmark
     w = WINDOW(DIMENSIONS=[700,900])
-    ;ct=colortable(38,/reverse)
-    ct=CONGRID(make_cmap(ncolors),3,256)
-      tmptr = CONTOUR(BYTE(SOS_RFE),FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
+    ct=colortable(38,/reverse)
+    ;ct=CONGRID(make_cmap(ncolors),3,256)
+      ;tmptr = CONTOUR(BYTE(SOS_GPM),FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
+      tmptr = CONTOUR(BYTE(SOS_GPM),FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
+ 
+        
       RGB_TABLE=ct, ASPECT_RATIO=1, Xstyle=1,Ystyle=1,$ ;3x256 array
       /FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors), $
-      ; TITLE=month[i],layout=[3,4,i+1], /CURRENT)  &$
-      TITLE='IMERG SOS', /CURRENT)  &$
+      TITLE='GPM SOS', /CURRENT, min_value=25)  &$
       m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot) &$;
       m = MAPCONTINENTS(/COUNTRIES,  COLOR = 'black', THICK=2) &$
       tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
       tmptr.mapgrid.FONT_SIZE = 0 &$
-      cb = colorbar(target=tmptr,ORIENTATION=0,TAPER=0,/BORDER, TITLE='Dekad Onset of rains', position=[0.3,0.04,0.7,0.07])
+      cb = colorbar(target=tmptr,ORIENTATION=0,TAPER=0,/BORDER, TITLE='Dekad Onset of rains')
 
  
  
