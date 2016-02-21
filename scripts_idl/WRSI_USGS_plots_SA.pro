@@ -200,7 +200,8 @@ SOS_RFE(where(SOS_RFE lt 0))=!values.f_nan
 SOS_CHP(where(SOS_CHP lt 0))=!values.f_nan
 SOS_GPM(where(SOS_GPM lt 0))=!values.f_nan
 
-temp = image(SOS_RFE-SOS_GPM,min_value=-10, max_value=10, rgb_table=4)
+temp = image(SOS_RFE-SOS_GPM,min_value=-10, max_value=10, rgb_table=4, /buffer)
+temp.save,'TEST.png',RESOLUTION=
 ;ok, I want the colorbar to start in September and End in Feb
 add = where(SOS_RFE gt 0 AND SOS_RFE lt 25)
 SOS_RFE(add)=SOS_RFE(add)+36
@@ -224,23 +225,21 @@ SOS_GPM(add)=SOS_GPM(add)+36
     ncolors = 38
     RGB_INDICES=indgen(60-22)+23
     index=RGB_INDICES
-    ;index = [-2,1,3,6,9,18,21,24,27,30,33,36,46,56]+1;[0,20,60,100,140];  C_VALUE=index,,max_value=200,min_value=0,
-    ;make these match with falkenmark
-    w = WINDOW(DIMENSIONS=[700,900])
+    months=['sep','','','oct','','','nov','','','dec','','','jan','','','feb','','','','','','','','','','','','','','','','','','','','','','no_start']
+   ; w = WINDOW(DIMENSIONS=[700,900])
     ct=colortable(38,/reverse)
     ;ct=CONGRID(make_cmap(ncolors),3,256)
-      ;tmptr = CONTOUR(BYTE(SOS_GPM),FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
-      tmptr = CONTOUR(BYTE(SOS_GPM),FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
- 
-        
+      tmptr = CONTOUR(BYTE(SOS_CHP),FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
       RGB_TABLE=ct, ASPECT_RATIO=1, Xstyle=1,Ystyle=1,$ ;3x256 array
       /FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors), $
-      TITLE='GPM SOS', /CURRENT, min_value=25)  &$
+      TITLE='CHIRPS SOS', /BUFFER, min_value=25)  &$
       m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot) &$;
       m = MAPCONTINENTS(/COUNTRIES,  COLOR = 'black', THICK=2) &$
       tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
       tmptr.mapgrid.FONT_SIZE = 0 &$
       cb = colorbar(target=tmptr,ORIENTATION=0,TAPER=0,/BORDER, TITLE='Dekad Onset of rains')
-
- 
+      cb.tickvalues = (FINDGEN(38))+1
+      cb.tickname = MONTHS
+      tmptr.save,'CHIRPS.png',RESOLUTION=300
+      close 
  
