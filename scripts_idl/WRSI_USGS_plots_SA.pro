@@ -196,20 +196,21 @@ fileID = ncdf_open(ifile3, /nowrite) &$
  sosID = ncdf_varid(fileID,'SOS_inst') &$
  ncdf_varget,fileID, sosID, SOS_GPM
  
-SOS_RFE(where(SOS_RFE lt 0))=!values.f_nan
-SOS_CHP(where(SOS_CHP lt 0))=!values.f_nan
-SOS_GPM(where(SOS_GPM lt 0))=!values.f_nan
+SOS_RFE(where(SOS_RFE le 0))=!values.f_nan
+SOS_CHP(where(SOS_CHP le 0))=!values.f_nan
+SOS_GPM(where(SOS_GPM le 0))=!values.f_nan
 
 temp = image(SOS_RFE-SOS_GPM,min_value=-10, max_value=10, rgb_table=4, /buffer)
-temp.save,'TEST.png',RESOLUTION=
+temp.save,'TEST.png',RESOLUTION=300
+
 ;ok, I want the colorbar to start in September and End in Feb
-add = where(SOS_RFE gt 0 AND SOS_RFE lt 25)
+add = where(SOS_RFE ge 1 AND SOS_RFE le 24)
 SOS_RFE(add)=SOS_RFE(add)+36
 
-add = where(SOS_CHP gt 0 AND SOS_CHP lt 25)
+add = where(SOS_CHP ge 1 AND SOS_CHP le 24)
 SOS_CHP(add)=SOS_CHP(add)+36
 
-add = where(SOS_GPM gt 0 AND SOS_GPM lt 25)
+add = where(SOS_GPM ge 1 AND SOS_GPM le 24)
 SOS_GPM(add)=SOS_GPM(add)+36
   
   ;South africa domain
@@ -222,24 +223,23 @@ SOS_GPM(add)=SOS_GPM(add)+36
   gNY = lry - uly + 2
 
 
-    ncolors = 38
-    RGB_INDICES=indgen(60-22)+23
-    index=RGB_INDICES
-    months=['sep','','','oct','','','nov','','','dec','','','jan','','','feb','','','','','','','','','','','','','','','','','','','','','','no_start']
+ ncolors = 17
+months=['','sep','','oct','','','nov','','','dec','','','jan','','','nostart','']
+ index = [    0,25,26,27,   28,29,30,   31, 32,33,  34,35,36,  37,38,39, 60]
+ col_names=['medium purple', 'medium orchid', 'orchid',  'dodger blue', 'deep sky blue', 'sky blue','green', 'yellow green', 'lime green',   'tomato', 'coral', 'light salmon', 'tan', 'sandy brown', 'peru',  'saddle brown', 'yellow']
    ; w = WINDOW(DIMENSIONS=[700,900])
-    ct=colortable(38,/reverse)
-    ;ct=CONGRID(make_cmap(ncolors),3,256)
-      tmptr = CONTOUR(BYTE(SOS_CHP),FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
-      RGB_TABLE=ct, ASPECT_RATIO=1, Xstyle=1,Ystyle=1,$ ;3x256 array
-      /FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors), $
-      TITLE='CHIRPS SOS', /BUFFER, min_value=25)  &$
+      tmptr = CONTOUR(SOS_CHP,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
+      ASPECT_RATIO=1, Xstyle=1,Ystyle=1, $
+      ;RGB_TABLE=ct,/FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors), $
+      /FILL, C_VALUE=index,C_COLOR=col_names, $     
+      TITLE='CHIRPS SOS', /BUFFER)  &$
       m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot) &$;
       m = MAPCONTINENTS(/COUNTRIES,  COLOR = 'black', THICK=2) &$
       tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
       tmptr.mapgrid.FONT_SIZE = 0 &$
-      cb = colorbar(target=tmptr,ORIENTATION=0,TAPER=0,/BORDER, TITLE='Dekad Onset of rains')
-      cb.tickvalues = (FINDGEN(38))+1
+      cb = colorbar(target=tmptr,ORIENTATION=0,/TAPER, /BORDER, TITLE='Dekad Onset of rains')
+      cb.tickvalues = (FINDGEN(17))
       cb.tickname = MONTHS
-      tmptr.save,'CHIRPS.png',RESOLUTION=300
+      tmptr.save,'CHIRPS.png'
       close 
  
