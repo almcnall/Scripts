@@ -224,22 +224,22 @@ SOS_GPM(add)=SOS_GPM(add)+36
 
 
  ncolors = 17
-months=['','sep','','oct','','','nov','','','dec','','','jan','','','nostart','']
+ months=['sep','','','oct','','','nov','','','dec','','','jan','','','','nostart']
  index = [    25,26,27,   28,29,30,   31, 32,33,  34,35,36,  37,38,39,40, 60]-0.5
  col_names=['medium purple', 'medium orchid', 'orchid',  'dodger blue', 'deep sky blue', 'sky blue','green', 'yellow green', 'lime green',   'tomato', 'coral', 'light salmon', 'tan', 'sandy brown', 'peru',  'saddle brown', 'yellow']
    ; w = WINDOW(DIMENSIONS=[700,900])
-      tmptr = CONTOUR(SOS_RFE,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
+      tmptr = CONTOUR(SOS_GPM,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
       ASPECT_RATIO=1, Xstyle=1,Ystyle=1, $
       ;RGB_TABLE=ct,/FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors), $
       /FILL, C_VALUE=index,C_COLOR=col_names, $     
-      TITLE='CHIRPS RFE', /BUFFER)  &$
+      TITLE='SOS IMERG', /BUFFER)  &$
       m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot) &$;
       m = MAPCONTINENTS(/COUNTRIES,  COLOR = 'black', THICK=2) &$
       tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
       tmptr.mapgrid.FONT_SIZE = 0 &$
-      cb = colorbar(target=tmptr,ORIENTATION=0,/TAPER, /BORDER, TITLE='Dekad Onset of rains')
+      cb = colorbar(target=tmptr,ORIENTATION=0, /BORDER,TAPER=0,THICK=0, TITLE='Dekad Onset of rains')
       cb.tickvalues = (FINDGEN(17))
       cb.tickname = MONTHS
-      tmptr.save,'test.png'
+      tmptr.save,'GPM.png'
       close 
  
