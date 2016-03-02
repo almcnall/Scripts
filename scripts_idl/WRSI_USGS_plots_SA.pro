@@ -11,19 +11,18 @@ WRSI_USGS_plots_SA
 ;on gs617
 ;wkdir = '/data0/almcnall/scripts_idl'
 ;on dali
-wkdir = '/home/almcnall/Scripts/scripts_idl/
+wkdir = '/home/almcnall/Scripts/scripts_idl/'
 
 cd, wkdir
-;.compile make_wrsi_cmap.pro
-.compile make_sos_cmap.pro
+.compile make_wrsi_cmap.pro
+;.compile make_sos_cmap.pro ;find out if correct file and move down.
 
 ;indir = '/home/sandbox/people/mcnally/WRSI_Sep2Feb_SA/'
-;indir = '/data0/almcnall/data/'
-indir = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/
+indir = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/'
 
-
-;read in the historic EOS so I am make the median
-ifile = file_search(indir+'WRSI_EOS_*.nc')
+;read in the historic EOS so I can make the median
+ifile = file_search(indir+'WRSI_CHIRPS_SA_SEP2MAY_RFECHP/zbyvar/WRSI_EOS_*.nc')
+;ifile = file_search(indir+'WRSI_EOS_*.nc')
 hEOS = fltarr(486,443,n_elements(ifile))
 
 for i = 0, n_elements(ifile)-1 do begin &$
@@ -46,6 +45,8 @@ for i = 0, n_elements(ifile)-1 do begin &$
   ncdf_varget,fileID, wrsiID, EOSwrsi &$
   EOS[*,*,i] = EOSWRSI &$
 endfor
+
+;read in the parameters for plotting
 ;nx = 486, ny = 443, nz = 33
 dims = size(hEOS, /dimensions)
 NX = dims[0]
@@ -61,6 +62,29 @@ uly = (50.-map_uly)*10. & lry = (50.-map_lry)*10.-1
 gNX = lrx - ulx + 2 ;not sure why i have to add 2...
 gNY = lry - uly + 2
 year = indgen(34)+82
+
+EOSnull = hEOS
+EOSnull(where(EOSnull le 0))=0.5 ;do that things don't explode when divide by zero
+medEOS = MEDIAN(EOSnull, dimension=3); 
+
+ ncolors = 8
+ index = [25,50,60,80,95,99,101]
+ col_names=['dark orange', 'peru', 'light goldenrod', 'spring green', 'lime green', 'green']
+   ; w = WINDOW(DIMENSIONS=[700,900])
+      tmptr = CONTOUR(median(hEOS,dimension=3),FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
+      ASPECT_RATIO=1, Xstyle=1,Ystyle=1, $
+      ;RGB_TABLE=make_wrsi_cmap(),/FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors), $
+      /FILL, C_VALUE=index,C_COLOR=col_names, $
+      TITLE='EOSCHIRPS', /BUFFER)  &$
+      m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot) &$;
+      m = MAPCONTINENTS(/COUNTRIES,  COLOR = 'black', THICK=2) &$
+      tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
+      tmptr.mapgrid.FONT_SIZE = 0 &$
+      cb = colorbar(target=tmptr,ORIENTATION=0, /BORDER,TAPER=0,THICK=0, TITLE='Dekad Onset of rains')
+      ;cb.tickvalues = (FINDGEN(17))
+      ;cb.tickname = MONTHS
+      tmptr.save,'/home/almcnall/test.png'
+      close
 
 for i = 0,n_elements(hEOS[0,0,*])-1 do begin &$
  ; p1 = image(byte(hEOS[*,*,i]), image_dimensions=[nx/10,ny/10],image_location=[map_ulx+0.25,map_lry], $
