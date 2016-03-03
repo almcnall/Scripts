@@ -4,12 +4,11 @@ WRSI_USGS_plots_SA
 ;WRSI and WRSI anomalies
 ;1/23/16 revisit for SAfrica forecasts
 ;2/20/16 use for Dalia's GPM SOS plots
+;3/03/16 update for median WRSI plots
 
 ;make the wrsi color table available
 ;on Rain
 ;wkdir = '/home/source/mcnally/scripts_idl/'
-;on gs617
-;wkdir = '/data0/almcnall/scripts_idl'
 ;on dali
 wkdir = '/home/almcnall/Scripts/scripts_idl/'
 
@@ -33,19 +32,6 @@ for i = 0, n_elements(ifile)-1 do begin &$
   hEOS[*,*,i] = EOSWRSI &$
 endfor
 
-
-;read in the simululated EOS 
-ifile = file_search(indir+'/SIM/WRSI_EOS_*.nc')
-EOS = fltarr(486,443,n_elements(ifile))
-
-for i = 0, n_elements(ifile)-1 do begin &$
-  fileID = ncdf_open(ifile[i], /nowrite) &$
-  ;wrsiID = ncdf_varid(fileID,'WRSI_inst') &$
-  wrsiID = ncdf_varid(fileID,'WRSI_TimeStep_inst') &$
-  ncdf_varget,fileID, wrsiID, EOSwrsi &$
-  EOS[*,*,i] = EOSWRSI &$
-endfor
-
 ;read in the parameters for plotting
 ;nx = 486, ny = 443, nz = 33
 dims = size(hEOS, /dimensions)
@@ -61,11 +47,10 @@ ulx = (180.+map_ulx)*10. & lrx = (180.+map_lrx)*10.-1
 uly = (50.-map_uly)*10. & lry = (50.-map_lry)*10.-1
 gNX = lrx - ulx + 2 ;not sure why i have to add 2...
 gNY = lry - uly + 2
-year = indgen(34)+82
 
-EOSnull = hEOS
-EOSnull(where(EOSnull le 0))=0.5 ;do that things don't explode when divide by zero
-medEOS = MEDIAN(EOSnull, dimension=3); 
+;EOSnull = hEOS
+;EOSnull(where(EOSnull le 0))=0.5 ;do that things don't explode when divide by zero
+;medEOS = MEDIAN(EOSnull, dimension=3); 
 
  ncolors = 8
  index = [25,50,60,80,95,99,101]
@@ -112,6 +97,19 @@ for i = 0,n_elements(hEOS[0,0,*])-1 do begin &$
  endfor
  
  ;compurte the probaility that EOS WRIS is <80% of normal.
+;read in the simululated EOS 
+ifile = file_search(indir+'/SIM/WRSI_EOS_*.nc')
+EOS = fltarr(486,443,n_elements(ifile))
+
+for i = 0, n_elements(ifile)-1 do begin &$
+  fileID = ncdf_open(ifile[i], /nowrite) &$
+  ;wrsiID = ncdf_varid(fileID,'WRSI_inst') &$
+  wrsiID = ncdf_varid(fileID,'WRSI_TimeStep_inst') &$
+  ncdf_varget,fileID, wrsiID, EOSwrsi &$
+  EOS[*,*,i] = EOSWRSI &$
+endfor
+
+
  ;(1) determine 'nornmal' with the 1982-2014 data. (have to recompute first)
  ;(2) computer percent of normal of EOS WRSI 
  ;- get plots set up with fake mean EOS
