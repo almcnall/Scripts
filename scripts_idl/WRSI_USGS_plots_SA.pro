@@ -19,7 +19,7 @@ cd, wkdir
 ;indir = '/home/sandbox/people/mcnally/WRSI_Sep2Feb_SA/'
 indir = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/'
 
-;read in the historic EOS so I can make the median
+;read in the historic CHIRPS EOS so I can make the median
 ifile = file_search(indir+'WRSI_CHIRPS_SA_SEP2MAY_RFECHP/zbyvar/WRSI_EOS_*.nc')
 ;ifile = file_search(indir+'WRSI_EOS_*.nc')
 hEOS = fltarr(486,443,n_elements(ifile))
@@ -30,6 +30,17 @@ for i = 0, n_elements(ifile)-1 do begin &$
   wrsiID = ncdf_varid(fileID,'WRSI_TimeStep_inst') &$
   ncdf_varget,fileID, wrsiID, EOSwrsi &$
   hEOS[*,*,i] = EOSWRSI &$
+endfor
+
+;read in the historic RFE2 EOS so I can make the median
+ifile = file_search(indir+'/WRSI_CHIRPS_SA_SEP2MAY_RFE2/zbyvar/WRSI_EOS_*nc')
+rEOS = fltarr(486,443,n_elements(ifile))
+
+for i = 0, n_elements(ifile)-1 do begin &$
+  fileID = ncdf_open(ifile[i], /nowrite) &$
+  wrsiID = ncdf_varid(fileID,'WRSI_TimeStep_inst') &$
+  ncdf_varget,fileID, wrsiID, EOSwrsi &$
+  rEOS[*,*,i] = EOSWRSI &$
 endfor
 
 ;read in the parameters for plotting
@@ -52,23 +63,26 @@ gNY = lry - uly + 2
 ;EOSnull(where(EOSnull le 0))=0.5 ;do that things don't explode when divide by zero
 ;medEOS = MEDIAN(EOSnull, dimension=3); 
 
+;hEOS for the same time period as RFE2 (2001-2014)
+short = hEOS[*,*,2001-1982:2014-1982] & help, short
+
  ncolors = 8
  index = [25,50,60,80,95,99,101]
  col_names=['dark orange', 'peru', 'light goldenrod', 'spring green', 'lime green', 'green']
    ; w = WINDOW(DIMENSIONS=[700,900])
-      tmptr = CONTOUR(median(hEOS,dimension=3),FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
+      tmptr = CONTOUR(median(short,dimension=3),FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
       ASPECT_RATIO=1, Xstyle=1,Ystyle=1, $
       ;RGB_TABLE=make_wrsi_cmap(),/FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors), $
       /FILL, C_VALUE=index,C_COLOR=col_names, $
-      TITLE='EOSCHIRPS', /BUFFER)  &$
+      TITLE='EOS CHIRPS (2001-2014)', /BUFFER)  &$
       m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot) &$;
       m = MAPCONTINENTS(/COUNTRIES,  COLOR = 'black', THICK=2) &$
       tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
       tmptr.mapgrid.FONT_SIZE = 0 &$
-      cb = colorbar(target=tmptr,ORIENTATION=0, /BORDER,TAPER=0,THICK=0, TITLE='Dekad Onset of rains')
+      cb = colorbar(target=tmptr,ORIENTATION=0, /BORDER,TAPER=0,THICK=0, TITLE='EOS WRSI')
       ;cb.tickvalues = (FINDGEN(17))
       ;cb.tickname = MONTHS
-      tmptr.save,'/home/almcnall/test.png'
+      tmptr.save,'/home/almcnall/CHP2001.png'
       close
 
 for i = 0,n_elements(hEOS[0,0,*])-1 do begin &$
