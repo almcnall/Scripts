@@ -18,9 +18,11 @@
 ;11/24/15 request for Ethiopia zoom on water avail plots (and I want SRI-12)  & moved to new version with contour only.
 ;12/7/15 fixing the colorbar, adding a landmask, including october
 ;12/8/15 writing out the percent of normal data for FEWS/Chemonics
-;01/07/15 repeat and improve for southern Africa
+;01/07/16 repeat and improve for southern Africa
+;03/03/16 update for discover
 
-.compile /home/source/mcnally/scripts_idl/get_nc.pro
+.compile /home/almcnall/Scripts/scripts_idl/get_nc.pro
+;.compile /home/source/mcnally/scripts_idl/get_nc.pro
 
 startyr = 1982 ;start with 1982 since no data in 1981
 endyr = 2015
@@ -51,8 +53,10 @@ uly = (50.-map_uly)*10.   & lry = (50.-map_lry)*10.-1
 NX = lrx - ulx + 2 
 NY = lry - uly + 2
 
+;will do with MERRA2 later...
 ;data_dir = '/home/ftp_out/people/mcnally/FLDAS/FLDAS4DISC/NOAH_RFE2_GDAS_SA/';FLDAS_NOAH01_B_SA_M.A201507.001.nc
-data_dir = '/home/ftp_out/people/mcnally/FLDAS/FLDAS4DISC/NOAH_CHIRPSv2.001_MERRA_SA/';FLDAS_NOAH01_B_SA_M.A201507.001.nc
+data_dir='/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/Noah33_CHIRPS_MERRA_SA/post/'
+;data_dir = '/home/ftp_out/people/mcnally/FLDAS/FLDAS4DISC/NOAH_CHIRPSv2.001_MERRA_SA/';FLDAS_NOAH01_B_SA_M.A201507.001.nc
 ;data_dir = '/home/ftp_out/people/mcnally/FLDAS/FLDAS4DISC/NOAH_CHIRPSv2.001_MERRA_WA/';FLDAS_NOAH01_B_SA_M.A201507.001.nc
 ;data_dir = '/home/ftp_out/people/mcnally/FLDAS/FLDAS4DISC/NOAH_CHIRPSv2.001_MERRA_EA/';FLDAS_NOAH01_B_SA_M.A201507.001.nc
 
@@ -75,12 +79,10 @@ for yr=startyr,endyr do begin &$
   ;does this somehow not work?
   VOI = 'Qs_tavg' &$ ;variable of interest 'SoilMoist_v_Rainf', SoilMoist_v_NDVI
   Qs = get_nc(VOI, ifile) &$
-  print, ifile, VOI &$
   Qsuf[*,*,i,yr-startyr] = Qs &$
     
   VOI = 'Qsb_tavg' &$
   Qsb = get_nc(VOI, ifile) &$
-  print, ifile, VOI &$
   Qsub[*,*,i,yr-startyr] = Qsb &$
   
   endfor &$ 
@@ -94,7 +96,8 @@ RO = Qsuf+Qsub
 ROmm  = RO*86400*30 ;YES
 
 ;;;;Plot population;;;;;;;
-indir = '/home/sandbox/people/mcnally/Africa-POP/'
+indir = '/discover/nobackup/almcnall/Africa-POP/'
+;indir = '/home/sandbox/people/mcnally/Africa-POP/'
 ;POP = read_tiff(indir+'EAfrica_POP_10km.tiff'); /home/sandbox/people/mcnally/Africa-POP/EAfricaYEM_POP_10km.tiff
 
 ;POP = read_tiff(indir+'EAfricaYEM_POP_10km.tiff')
@@ -109,7 +112,8 @@ popmask(urban)=1
 ;add the landmask to the pop mask
 ;ifile = file_search('/home/sandbox/people/mcnally/LIS_NETCDF_INPUT/lis_input_ea_elev.nc');lis_input_wrsi.ea_oct2feb.nc
 ;ifile = file_search('/home/sandbox/people/mcnally/LIS_NETCDF_INPUT/lis_input_wrsi.ea_oct2feb.nc');lis_input_wrsi.sa.nc
-ifile = file_search('/home/sandbox/people/mcnally/LIS_NETCDF_INPUT/lis_input_wrsi.sa.nc');lis_input_wrsi.wa.mode.nc
+;ifile = file_search('/home/sandbox/people/mcnally/LIS_NETCDF_INPUT/lis_input_wrsi.sa.nc');lis_input_wrsi.wa.mode.nc
+ifile = file_search('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/lis_input_wrsi.sa.nc')
 ;ifile = file_search('/home/sandbox/people/mcnally/LIS_NETCDF_INPUT/lis_input_wrsi.wa.mode.nc')
 
 fileID = ncdf_open(ifile)
@@ -160,24 +164,27 @@ CLASS = ['absolute scarcity ', 'scarcity', 'stress', 'no stress']
   RGB_INDICES=[0,41,82,142]
   index = [0,41,82,142];[0,20,60,100,140];  C_VALUE=index,,max_value=200,min_value=0, 
   ;make these match with falkenmark
-w = WINDOW(DIMENSIONS=[700,900])
+;w = WINDOW(DIMENSIONS=[700,900])
 ct=colortable(25,/reverse)
-for i = 0, 11 do begin &$
+;for i = 0, 11 do begin &$
   ;tmptr = CONTOUR(moncmpp[*,*,i]*popmask,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
   tmptr = CONTOUR(CMPPcube[*,*,10,33]*popmask,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
   ;tmptr = CONTOUR(ETHcmpp[*,*,i]*EthPOP,FINDGEN(eNX)/10.+map_ulx+10, FINDGEN(eNY)/10.+map_lry+15, $ ;
     RGB_TABLE=ct, ASPECT_RATIO=1, Xstyle=1,Ystyle=1,$ ;3x256 array
     /FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors), $
    ; TITLE=month[i],layout=[3,4,i+1], /CURRENT)  &$
-    TITLE='Novemer', /CURRENT)  &$
+    TITLE='November',/BUFFER)  &$
   m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot) &$;
  ; m1 = MAP('Geographic',limit=[map_lry+15,map_ulx+10,map_uly,map_lrx], /overplot) &$;
   ;mycont = MAPCONTINENTS(shapefile, /COUNTRIES,HIRES=1, thick=2) &$
     m = MAPCONTINENTS(/COUNTRIES,  COLOR = 'black', THICK=2) &$
     tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
     tmptr.mapgrid.FONT_SIZE = 0 &$
-endfor
-cb = colorbar(target=tmptr,ORIENTATION=0,TAPER=1,/BORDER, TITLE='runoff per capita ($m^{3} month^{-1}$)', position=[0.3,0.04,0.7,0.07]) 
+cb = colorbar(target=tmptr,ORIENTATION=0,TAPER=1,/BORDER, TITLE='runoff per capita ($m^{3} month^{-1}$)',position=[0.3,0.07,0.7,0.11])
+
+tmptr.save,'/home/almcnall/test.png'
+;endfor
+;cb = colorbar(target=tmptr,ORIENTATION=0,TAPER=1,/BORDER, TITLE='runoff per capita ($m^{3} month^{-1}$)', position=[0.3,0.04,0.7,0.07]) 
   
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;now sum the months that have water scaricity
@@ -252,12 +259,12 @@ print, max(cmppcube(where(finite(cmppcube))))
  CMPPout = CMPPanom*popmaskcube
  ;ETHout = CMPPout[100:NX-1,150:NY-1,*,*]*100 & help, EthOUT
 
- w = WINDOW(DIMENSIONS=[900,700])
+ ;w = WINDOW(DIMENSIONS=[900,700])
  ;tmptr = CONTOUR(nmos*popmask,FINDGEN(NX)/10. + map_ulx, FINDGEN(NY)/10. + map_lry, $
  ;tmptr = CONTOUR(EthPON[*,*,7,33]*100*Ethpop,FINDGEN(eNX)/10. + map_ulx+10, FINDGEN(eNY)/10. + map_lry+15, RGB_TABLE=ct,$
- tmptr = CONTOUR(CMPPanom[*,*,10,nyrs-1]*100*landmask,FINDGEN(NX)/10. + map_ulx, FINDGEN(NY)/10. + map_lry, RGB_TABLE=ct,$
+ tmptr = CONTOUR(CMPPanom[*,*,10,nyrs-1]*100*popmask,FINDGEN(NX)/10. + map_ulx, FINDGEN(NY)/10. + map_lry, RGB_TABLE=ct,$
    /FILL, ASPECT_RATIO=1, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors), layout=[1,1,1],$
-   TITLE='Nov percent of normal water availability', MAP_PROJECTION='geographic',Xstyle=1,Ystyle=1, /CURRENT)  &$
+   TITLE='Nov percent of normal water availability', MAP_PROJECTION='geographic',Xstyle=1,Ystyle=1, /BUFFER)  &$
    tmptr.rgb_table = reverse(tmptr.rgb_table,2)
  tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
    tmptr.mapgrid.FONT_SIZE = 0 &$
@@ -265,8 +272,9 @@ print, max(cmppcube(where(finite(cmppcube))))
    m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot) &$;
   ; mycont = MAPCONTINENTS(shapefile, /COUNTRIES,HIRES=1) &$
    m = MAPCONTINENTS(/COUNTRIES,  COLOR = 'black', THICK=2) &$
-   cb = colorbar(target=tmptr,ORIENTATION=0,TAPER=1,/BORDER, TITLE='precent of normal', position=[0.3,0.04,0.7,0.07])
-   
+   cb = colorbar(target=tmptr,ORIENTATION=0,TAPER=1,/BORDER, TITLE='precent of normal', position=[0.3,0.07,0.7,0.11])
+   tmptr.save,'/home/almcnall/test.png'
+
 temp = image(EthPON[*,*,8,33]*Ethpop*100, rgb_table=72)
 
 ;;;;;writining rasters for Chemonics;;;;;;;;;;;;;;;;
@@ -364,37 +372,37 @@ yyind = FLOOR( (6.6 - map_lry) / 0.1)
 
 month = ['jan', 'feb', 'mar','apr','may','jun','jul','aug','sep','oct','nov','dec']
 
-xind = lxind
-yind = lyind
+xind = gxind
+yind = gyind
 YOI = 2015
 YOI2 = 2014
 
 ;p1 = barplot(mean(mean(monCMPP[hulx:hlrx,hlry:huly,*],dimension=1,/NAN),dimension=1,/NAN),fill_color='c', name='avg')
-p1 = barplot(mean(mean(monCMPP[xind,yind,*],dimension=1,/NAN),dimension=1,/NAN),fill_color='c', name='avg')
-p2 = plot(mean(mean(CMPPcube[xind,yind,*,YOI-startyr],dimension=1,/NAN),dimension=1,/NAN), /overplot, thick=3, name=string(YOI))
-p3 = plot(mean(mean(CMPPcube[xind,yind,*,YOI2-startyr],dimension=1,/NAN),dimension=1,/NAN), /overplot, thick=3, linestyle=2, name=string(YOI2))
+p1 = barplot(mean(mean(monCMPP[xind,yind,*],dimension=1,/NAN),dimension=1,/NAN),fill_color='c', name='avg', /BUFFER)
+p2 = plot(mean(mean(CMPPcube[xind,yind,*,YOI-startyr],dimension=1,/NAN),dimension=1,/NAN), /overplot, thick=3, name=string(YOI), /BUFFER)
+p3 = plot(mean(mean(CMPPcube[xind,yind,*,YOI2-startyr],dimension=1,/NAN),dimension=1,/NAN), /overplot, thick=3, linestyle=2, name=string(YOI2), /BUFFER)
 
-p3.yrange=[0,1000]
+p3.yrange=[0,1400]
 p3.xrange=[0,11]
 p3.xtickinterval=1
 p3.xtickname=month
 p3.xminor=0
 line=polyline([0,11],[83,83],/data,target=p3,/overplot)
 ;p1.title = string([hmap_lrx, hmap_ulx, hmap_uly, hmap_lry])
-p1.title = 'Mpala Kenya 37E, 0.3N';'Adwa, Tigray (39.4E,14N)';;'Yirol, South Sudan (30.26E, 6.6N)';'Bale (39E,7N)';Sheka (35.46,8.8N)';
-p1.title = 'Yirol, South Sudan (30.26E, 6.6N)';'Bale (39E,7N)';Sheka (35.46,8.8N)';
-p1.title = 'Adwa, Tigray (39.4E,14N)';;'Yirol, South Sudan (30.26E, 6.6N)';'Bale (39E,7N)';Sheka (35.46,8.8N)';
+;p1.title = 'Mpala Kenya 37E, 0.3N';'Adwa, Tigray (39.4E,14N)';;'Yirol, South Sudan (30.26E, 6.6N)';'Bale (39E,7N)';Sheka (35.46,8.8N)';
+;p1.title = 'Yirol, South Sudan (30.26E, 6.6N)';'Bale (39E,7N)';Sheka (35.46,8.8N)';
+;p1.title = 'Adwa, Tigray (39.4E,14N)';;'Yirol, South Sudan (30.26E, 6.6N)';'Bale (39E,7N)';Sheka (35.46,8.8N)';
 p1.title = 'Gaborone Botswanna (25.9E, 24.7S)';;'Yirol, South Sudan (30.26E, 6.6N)';'Bale (39E,7N)';Sheka (35.46,8.8N)';
-p1.title = 'Lesotho (28.5E, 29.5S)';;'Yirol, South Sudan (30.26E, 6.6N)';'Bale (39E,7N)';Sheka (35.46,8.8N)';
-p1.title = 'Hwanae Dam, Swaziland (31E, 26.2S)';;'Yirol, South Sudan (30.26E, 6.6N)';'Bale (39E,7N)';Sheka (35.46,8.8N)';
-p1.title = 'Windhoek, Namimbia (17E, 22S)';;'Yirol, South Sudan (30.26E, 6.6N)';'Bale (39E,7N)';Sheka (35.46,8.8N)';
-p1.title = 'Kariba Dam, Zambia (27.5E, 17S)';;
+;p1.title = 'Lesotho (28.5E, 29.5S)';;'Yirol, South Sudan (30.26E, 6.6N)';'Bale (39E,7N)';Sheka (35.46,8.8N)';
+;p1.title = 'Hwanae Dam, Swaziland (31E, 26.2S)';;'Yirol, South Sudan (30.26E, 6.6N)';'Bale (39E,7N)';Sheka (35.46,8.8N)';
+;p1.title = 'Windhoek, Namimbia (17E, 22S)';;'Yirol, South Sudan (30.26E, 6.6N)';'Bale (39E,7N)';Sheka (35.46,8.8N)';
+;p1.title = 'Kariba Dam, Zambia (27.5E, 17S)';;
 
-p1.title = 'Wankama, Niger (2.63E, 13.645N)';;'Yirol, South Sudan (30.26E, 6.6N)';'Bale (39E,7N)';Sheka (35.46,8.8N)';
+;p1.title = 'Wankama, Niger (2.63E, 13.645N)';;'Yirol, South Sudan (30.26E, 6.6N)';'Bale (39E,7N)';Sheka (35.46,8.8N)';
 
-!null = legend(target=[p1,p2,p3], position=[0.2,0.3]) 
+!null = legend(target=[p1,p2,p3], position=[0.75,0.75]) 
 p3.ytitle = 'runoff (m3) per person per month'
-
+p1.save,'/home/almcnall/GBD_TS.png'
 
 p1 = plot(mean(mean(CMPPcube[hulx:hlrx,hlry:huly,*,32],dimension=1,/NAN),dimension=1,/NAN), /overplot, thick=5, linestyle=2)
 p1 = plot(mean(mean(CMPPcube[hulx:hlrx,hlry:huly,*,31],dimension=1,/NAN),dimension=1,/NAN), /overplot, thick=5, linestyle=2)

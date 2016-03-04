@@ -18,10 +18,8 @@ VOI = 'SoilMoist_v_SoilMoist' ;variable of interest 'SoilMoist_v_Rainf', SoilMoi
 ;ifile = file_search(indir+'LVT_ACORR_CCISM_NOAHSM01_CHIRPSGDAS_2001_2013_EA.nc') & print, ifile ;this needs to be re-done
 
 ;ifile = file_search(indir+'ESACCI/STATS_EA_CHIRPS_MERRA2_2001/LVT_ACORR_FINAL.201401010000.d01.nc') & print, ifile
-ifile = file_search(indir+'ESACCI/STATS_EA_CHIRPS_FIX_2001/LVT_ACORR_FINAL.201401010000.d01.nc') & print, ifile
+ifile = file_search(indir+'ESACCI/STATS_SA_CHIRPS_FIX_2001/LVT_ACORR_FINAL.201401010000.d01.nc') & print, ifile
 ;ifile = file_search(indir+'LVT_ACORR_FINAL.201401010000.d01_CM_FIX_EA_2001.nc') & print, ifile
-;ifile = file_search(indir+'LVT_ACORR_FINAL.201401010000.d01_CM_FIX_WA_2001.nc')
-;ifile = file_search(indir+'LVT_ACORR_FINAL.201401010000.d01_CM_FIX_SA_2001.nc')
 ACORR_fix = get_nc(VOI, ifile)
 ACORR_fix(where(ACORR_fix lt -10))=!values.f_nan
 
@@ -44,7 +42,7 @@ RCORR_RG = get_nc(VOI, ifile)
 RCORR_RG(where(RCORR_RG lt -10))=!values.f_nan
 
 ;;;;;all these need to be redone with the correlations from 2001 rather than 1992
-ifile = file_search(indir+'GIMMS/STATS_EA_CMfix_2001/LVT_RCORR_FINAL.201401010000.d01.nc') & print, ifile ;this needs to re-do from
+ifile = file_search(indir+'GIMMS/STATS_SA_CMfix_2001/LVT_RCORR_FINAL.201401010000.d01.nc') & print, ifile ;this needs to re-do from
 ;ifile = file_search(indir+'LVT_RCORR_NDVI_NoahSM01fix_1992_2013_EA.nc') & print, ifile ;this needs to re-do from
 RCORR_CMfix = get_nc(VOI, ifile)
 RCORR_CMfix(where(RCORR_CMfix lt -10))=!values.f_nan
@@ -66,16 +64,16 @@ NX = dims[0]
 NY = dims[1]
 
 ;South africa domain
-;map_ulx = 6.05 & map_lrx = 54.55
-;map_uly = 6.35 & map_lry = -37.85
+map_ulx = 6.05 & map_lrx = 54.55
+map_uly = 6.35 & map_lry = -37.85
 
 ; west africa domain
 ;map_ulx = -18.65 & map_lrx = 25.85
 ;map_uly = 17.65 & map_lry = 5.35
 
 ; East africa domain
-map_ulx = 22.05 & map_lrx = 51.35
-map_uly = 22.95 & map_lry = -11.75
+;map_ulx = 22.05 & map_lrx = 51.35
+;map_uly = 22.95 & map_lry = -11.75
 
 ;greg's way of nx, ny-ing
 ulx = (180.+map_ulx)*10. & lrx = (180.+map_lrx)*10.-1
@@ -84,51 +82,20 @@ NX = lrx - ulx + 2 ;not sure why i have to add 2...
 NY = lry - uly + 2
 
 ;change this to a contour plot.
-ncolors = 5
-index = [-1,-0.5 ,0, 0.5, 1]
-tmptr = CONTOUR(RCORR_CMfix,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
+ncolors = 6
+index = [-1,0.4,0.5,0.6,0.7,0.8]
+tmptr = CONTOUR(ACORR_fix,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
   ASPECT_RATIO=1, Xstyle=1,Ystyle=1, $
   RGB_TABLE=64,/FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors), $
-  TITLE='ANOM CORR NDVI (2001-2014)', /BUFFER)  &$
+  TITLE='ANOM CORR MW (2001-2014)', /BUFFER)  &$
   m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot) &$;
   m = MAPCONTINENTS(/COUNTRIES,  COLOR = 'black', THICK=2) &$
+ ;mycont = MAPCONTINENTS(shapefile, /COUNTRIES,HIRES=1) &$  
   tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
   tmptr.mapgrid.FONT_SIZE = 0 &$
   cb = colorbar(target=tmptr,ORIENTATION=0, /BORDER,TAPER=0,THICK=0, TITLE='correlation')
   tmptr.save,'/home/almcnall/test.png'
   close
-
-
-
-
-  
-  ncolors=5
-  w = window(DIMENSIONS=[1000,600])
-
-;for some reason EA needs a plus 0.25 to get the grid to alighn (map_lry+0.25)
-  p1 = image(congrid(RCORR_RG,NX*3,NY*3), image_dimensions=[nx/10,ny/10],image_location=[map_ulx+0.25,map_lry+0.25], $
-            RGB_TABLE=64, layout = [2,1,2], /current, /buffer) &$
-  rgbind = FIX(FINDGEN(ncolors)*255./(ncolors-1))  &$  ; set the index of the colors to be pulled
-  rgbdump = p1.rgb_table & rgbdump = CONGRID(rgbdump[*,rgbind],3,256)  &$ ; just rewrites the discrete colorbar
-  ;rgbdump[*,255] = [255,255,255] &$ ; set map values of zero to white, you can change the color
-  rgbdump[*,0] = [190,190,190] &$
-  rgbdump[*,255] = [190,190,190] &$
-  p1.rgb_table = rgbdump &$ ; reassign the colorbar to the image
-  p1.MAX_VALUE=0.9 &$
-  p1.min_value=-0.1
-  c = COLORBAR(target=p1,ORIENTATION=1,/BORDER_ON);, $
-            ; POSITION=[0.3,0.04,0.7,0.07], font_size=16) &$
-  tmpclr = p1.rgb_table &$
-  ;tmpclr[*,0] = [211,211,211] &$ ;different color oceans
-  ;tmpclr[*,0] = [102,178,255] &$
-  p1.rgb_table = tmpclr &$ 
-  p1 = MAP('Geographic',LIMIT = [map_lry,map_ulx,map_uly ,map_lrx], /overplot) &$
-  p1.mapgrid.linestyle = 'none' &$  ; could also use 6 here
-  p1.mapgrid.color = [150, 150, 150] &$
-  ;mycont = MAPCONTINENTS(shapefile, /COUNTRIES,HIRES=1) &$
-  m = MAPCONTINENTS(/COUNTRIES,  COLOR = 'black', THICK=2)
-  p1.title = 'Noah33+RFE2+GDAS anom corr. with CCI-SMv2.0'
-  p1.title = 'Noah33+RFE2+GDAS rank corr. with lagged NDVI'
 
  
     
