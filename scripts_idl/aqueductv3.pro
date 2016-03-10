@@ -20,12 +20,13 @@
 ;12/8/15 writing out the percent of normal data for FEWS/Chemonics
 ;01/07/16 repeat and improve for southern Africa
 ;03/03/16 update for discover
+;03/10/16 update with Jan. CHIRPS+MERRA2 data for Chemonics
 
 .compile /home/almcnall/Scripts/scripts_idl/get_nc.pro
 ;.compile /home/source/mcnally/scripts_idl/get_nc.pro
 
 startyr = 1982 ;start with 1982 since no data in 1981
-endyr = 2015
+endyr = 2016
 nyrs = endyr-startyr+1
 
 ;re-do for all months
@@ -55,7 +56,7 @@ NY = lry - uly + 2
 
 ;will do with MERRA2 later...
 ;data_dir = '/home/ftp_out/people/mcnally/FLDAS/FLDAS4DISC/NOAH_RFE2_GDAS_SA/';FLDAS_NOAH01_B_SA_M.A201507.001.nc
-data_dir='/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/Noah33_CHIRPS_MERRA_SA/post/'
+data_dir='/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/Noah33_CHIRPS_MERRA2_SA/post/'
 ;data_dir = '/home/ftp_out/people/mcnally/FLDAS/FLDAS4DISC/NOAH_CHIRPSv2.001_MERRA_SA/';FLDAS_NOAH01_B_SA_M.A201507.001.nc
 ;data_dir = '/home/ftp_out/people/mcnally/FLDAS/FLDAS4DISC/NOAH_CHIRPSv2.001_MERRA_WA/';FLDAS_NOAH01_B_SA_M.A201507.001.nc
 ;data_dir = '/home/ftp_out/people/mcnally/FLDAS/FLDAS4DISC/NOAH_CHIRPSv2.001_MERRA_EA/';FLDAS_NOAH01_B_SA_M.A201507.001.nc
@@ -74,7 +75,7 @@ for yr=startyr,endyr do begin &$
   endif &$
   ;fileID = ncdf_open(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_B_EA_M.A'',I4.4,I2.2,''.001.nc'')',y,m), /nowrite) &$
   ;fileID = ncdf_open(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_B_WA_M.A'',I4.4,I2.2,''.001.nc'')',y,m), /nowrite) &$
-  ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_B_SA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
+  ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_C_SA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
   ;ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_A_SA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
   ;does this somehow not work?
   VOI = 'Qs_tavg' &$ ;variable of interest 'SoilMoist_v_Rainf', SoilMoist_v_NDVI
@@ -125,7 +126,7 @@ landmask(where(landmask eq 0))=!values.f_nan
 
 popmask=popmask*landmask
 
-temp =image(popmask, min_value=0)
+;temp =image(popmask, min_value=0)
 
 ;;compute m3 per capita per month
 ;initialize variables
@@ -262,9 +263,9 @@ print, max(cmppcube(where(finite(cmppcube))))
  ;w = WINDOW(DIMENSIONS=[900,700])
  ;tmptr = CONTOUR(nmos*popmask,FINDGEN(NX)/10. + map_ulx, FINDGEN(NY)/10. + map_lry, $
  ;tmptr = CONTOUR(EthPON[*,*,7,33]*100*Ethpop,FINDGEN(eNX)/10. + map_ulx+10, FINDGEN(eNY)/10. + map_lry+15, RGB_TABLE=ct,$
- tmptr = CONTOUR(CMPPanom[*,*,10,nyrs-1]*100*popmask,FINDGEN(NX)/10. + map_ulx, FINDGEN(NY)/10. + map_lry, RGB_TABLE=ct,$
+ tmptr = CONTOUR(CMPPanom[*,*,11,nyrs-2]*100*popmask,FINDGEN(NX)/10. + map_ulx, FINDGEN(NY)/10. + map_lry, RGB_TABLE=ct,$
    /FILL, ASPECT_RATIO=1, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors), layout=[1,1,1],$
-   TITLE='Nov percent of normal water availability', MAP_PROJECTION='geographic',Xstyle=1,Ystyle=1, /BUFFER)  &$
+   TITLE='Dec percent of normal water availability', MAP_PROJECTION='geographic',Xstyle=1,Ystyle=1, /BUFFER)  &$
    tmptr.rgb_table = reverse(tmptr.rgb_table,2)
  tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
    tmptr.mapgrid.FONT_SIZE = 0 &$
@@ -374,8 +375,8 @@ month = ['jan', 'feb', 'mar','apr','may','jun','jul','aug','sep','oct','nov','de
 
 xind = gxind
 yind = gyind
-YOI = 2015
-YOI2 = 2014
+YOI = 2016
+YOI2 = 2015
 
 ;p1 = barplot(mean(mean(monCMPP[hulx:hlrx,hlry:huly,*],dimension=1,/NAN),dimension=1,/NAN),fill_color='c', name='avg')
 p1 = barplot(mean(mean(monCMPP[xind,yind,*],dimension=1,/NAN),dimension=1,/NAN),fill_color='c', name='avg', /BUFFER)
