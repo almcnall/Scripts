@@ -66,23 +66,28 @@ gNY = lry - uly + 2
 ;hEOS for the same time period as RFE2 (2001-2014)
 short = hEOS[*,*,2001-1982:2014-1982] & help, short
 
- ncolors = 8
+ ncolors = 6
  index = [25,50,60,80,95,99,101]
+ labels=['fail', 'poor', 'mediocre','average', 'good','very good']
  col_names=['dark orange', 'peru', 'light goldenrod', 'spring green', 'lime green', 'green']
    ; w = WINDOW(DIMENSIONS=[700,900])
-      tmptr = CONTOUR(median(short,dimension=3),FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
+      tmptr = CONTOUR(median(rEOS,dimension=3),FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
       ASPECT_RATIO=1, Xstyle=1,Ystyle=1, $
       ;RGB_TABLE=make_wrsi_cmap(),/FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors), $
       /FILL, C_VALUE=index,C_COLOR=col_names, $
-      TITLE='EOS CHIRPS (2001-2014)', /BUFFER)  &$
+      TITLE='EOS RFE2 (2001-2014)', /BUFFER)  &$
       m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot) &$;
       m = MAPCONTINENTS(/COUNTRIES,  COLOR = 'black', THICK=2) &$
       tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
       tmptr.mapgrid.FONT_SIZE = 0 &$
-      cb = colorbar(target=tmptr,ORIENTATION=0, /BORDER,TAPER=0,THICK=0, TITLE='EOS WRSI')
+      cb = colorbar(target=tmptr,ORIENTATION=0, /BORDER,TAPER=0,THICK=0,POSITION=[0.3,0.1,0.7,0.13])
       ;cb.tickvalues = (FINDGEN(17))
       ;cb.tickname = MONTHS
-      tmptr.save,'/home/almcnall/CHP2001.png'
+      cb.tickvalues = (FINDGEN(6))
+      cb.tickname = labels      
+      cb.font_size=6
+     ;tmptr.save,'/home/almcnall/CHP2001.png'
+     tmptr.save,'/home/almcnall/test.png'
       close
 
 for i = 0,n_elements(hEOS[0,0,*])-1 do begin &$
@@ -203,7 +208,7 @@ class(above) = 150
   p1 = MAPCONTINENTS(/COUNTRIES,  COLOR = [120, 120, 120])
   
   ;;make the SOS plots for souther africa that look like USGS:
-  ;indir = '/home/sandbox/people/mcnally/GPM_SOS4Dalia/'
+  ;indir = '/home/sandbox/people/mcnally/GPM_SOS5Dalia/'
   ;indir='/data0/almcnall/data/'
   indir='/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/SOS4Dalia/'
   ifile1 = file_search(indir+'/RFE_LIS_HIST_201602202330.d01.nc') & print, ifile1
