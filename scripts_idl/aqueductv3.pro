@@ -234,6 +234,7 @@ countmap = monCMPP[*,*,*]*!values.f_nan
  CMPPanom = ROmm*!values.f_nan
  ;CMPPstd = ROmm*!values.f_nan
 ;CMPPcube(where(CMPPcube gt 8973))= 8973
+CMPPmon(where(CMPPmon gt 8973))= 8973
 print, max(cmppcube(where(finite(cmppcube))))
  
  for y = 0,nyrs-1 do begin &$
@@ -255,7 +256,7 @@ print, max(cmppcube(where(finite(cmppcube))))
  ct=colortable(72,/reverse)
  
  ;put a cap on percent of normal before writing out.
- ;CMPPanom(where(CMPPanom gt 2))=2
+ CMPPanom(where(CMPPanom gt 2))=2
  ;apply the pop mask before writing out.
  CMPPout = CMPPanom*popmaskcube
  ;ETHout = CMPPout[100:NX-1,150:NY-1,*,*]*100 & help, EthOUT
@@ -274,6 +275,8 @@ print, max(cmppcube(where(finite(cmppcube))))
   ; mycont = MAPCONTINENTS(shapefile, /COUNTRIES,HIRES=1) &$
    m = MAPCONTINENTS(/COUNTRIES,  COLOR = 'black', THICK=2) &$
    cb = colorbar(target=tmptr,ORIENTATION=0,TAPER=1,/BORDER, TITLE='precent of normal', position=[0.3,0.07,0.7,0.11])
+tmptr = image(CMPPout[*,*,0,34],rgb_table=4,/buffer, title = 'jan CM/pp')
+c=colorbar()
    tmptr.save,'/home/almcnall/test.png'
 
 temp = image(EthPON[*,*,8,33]*Ethpop*100, rgb_table=72)
@@ -304,8 +307,8 @@ outdir = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/SAPON/'
 for yr = 1982,2016 do begin &$
   for m = 1,12 do begin &$
   ofile = outdir+STRING(FORMAT='(''WaterStressPercentNorm_SA'',I4.4,I2.2,''.tif'')',yr,m) &$
-  print,max(CMPPanom[*,*,m-1,yr-startyr],/nan) &$
-  write_tiff, ofile, reverse(CMPPanom[*,*,m-1,yr-startyr],2), geotiff=g_tags, /FLOAT &$
+  print,max(CMPPout[*,*,m-1,yr-startyr],/nan) &$
+  write_tiff, ofile, reverse(CMPPout[*,*,m-1,yr-startyr]*100,2), geotiff=g_tags, /FLOAT &$
   endfor &$
 endfor
 
