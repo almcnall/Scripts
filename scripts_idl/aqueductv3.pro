@@ -107,7 +107,7 @@ POP = read_tiff(indir+'SAfrica_POP_10km.tiff')
 
 
 popmask = pop*!values.f_nan
-rural = where(pop le 0.1, complement = urban)
+rural = where(pop le 0.05, complement = urban)
 popmask(urban)=1
 
 ;add the landmask to the pop mask
@@ -124,7 +124,7 @@ NCDF_close, fileID
 landmask(where(landmask gt 0))=1
 landmask(where(landmask eq 0))=!values.f_nan
 
-popmask=popmask*landmask
+;popmask=popmask*landmask
 
 ;temp =image(popmask, min_value=0)
 
@@ -278,35 +278,36 @@ print, max(cmppcube(where(finite(cmppcube))))
 
 temp = image(EthPON[*,*,8,33]*Ethpop*100, rgb_table=72)
 
-;;;;;writining rasters for Chemonics;;;;;;;;;;;;;;;;
+;;;;;writting rasters for Chemonics;;;;;;;;;;;;;;;;
 ;;read in the tif data to see if it matches...maybe just a month off.
-;indir = '/home/ftp_out/people/mcnally/FLDAS/Ethiopia_WaterStress/'
+;indir = '/home/ftp_out/people/mcnally/FLDAS/SouthernAfr_WaterStress/'
 ;ingrid = read_tiff(file_search(indir+'WaterStressPercentNorm_Eth201306.tif'))
 ;temp = image(reverse(ingrid, 2), rgb_table=74, layout = [2,1,1])
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;write out files for CHEMONICS;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;1b. Check data quality for distribution to Chemonics:
 ;temp = image(ETHout[*,*,6-1,yr-1982]*100, rgb_table=74,layout=[2,1,2], /current) 
 ;cb = colorbar()
 ;
 ;;ok looks reasonable what are the corner pnts so that i can write out a TIFF?
-;ofile1 = '/home/sandbox/people/mcnally/ETH4CHEM.bin'
-;openw,1,ofile1
-;writeu,1,ETHout[*,*,8,33]
-;close,1
+ofile1 = '/home/almcnall/SA4CHEM.bin'
+openw,1,ofile1
+writeu,1,CMPPanom[*,*,8,33]
+close,1
 ;
 ;;open the tiff to grab the geotag
-;ifile = file_search('/home/sandbox/people/mcnally/ETH4CHEM.tif')
-;ingrid = read_tiff(ifile, GEOTIFF=g_tags)
-;;then write out the files...where should the files go? what should they be called?
-;;percent of normal water stress, month yr.
-;outdir = '/home/sandbox/people/mcnally/PON_Ethiopia_stress/'
-;for yr = 1982,2015 do begin &$
-;  for m = 1,12 do begin &$
-;  ofile = outdir+STRING(FORMAT='(''WaterStressPercentNorm_Eth'',I4.4,I2.2,''.tif'')',yr,m) &$
-;  print, ofile &$
-;  write_tiff, ofile, reverse(Ethout[*,*,m-1,yr-startyr],2), geotiff=g_tags, /FLOAT &$
-;  endfor &$
-;endfor
+ifile = file_search('/home/almcnall/SA4CHEM.tif')
+ingrid = read_tiff(ifile, GEOTIFF=g_tags)
+;then write out the files...where should the files go? what should they be called?
+;percent of normal water stress, month yr.
+outdir = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/SAPON/'
+for yr = 1982,2016 do begin &$
+  for m = 1,12 do begin &$
+  ofile = outdir+STRING(FORMAT='(''WaterStressPercentNorm_SA'',I4.4,I2.2,''.tif'')',yr,m) &$
+  print,max(CMPPanom[*,*,m-1,yr-startyr],/nan) &$
+  write_tiff, ofile, reverse(CMPPanom[*,*,m-1,yr-startyr],2), geotiff=g_tags, /FLOAT &$
+  endfor &$
+endfor
 
   
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
