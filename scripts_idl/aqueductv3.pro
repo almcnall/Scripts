@@ -143,6 +143,7 @@ CMPPcube(where(CMPPcube gt 8973))= 8973
 ;what is the average per person per month (show 12 months)
 
 ;take the ratio of the observed CMPP to the average CMPP, 
+;I should keep this standard to a particular time period.
 monRO = mean(ROmm,dimension=4,/nan) & help, monRO
 monCMPP  = (monRO/pop12)*1000      & help, monCMPP
 
