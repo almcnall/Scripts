@@ -17,8 +17,9 @@ VOI = 'SoilMoist_v_SoilMoist' ;variable of interest 'SoilMoist_v_Rainf', SoilMoi
 
 ;ifile = file_search(indir+'LVT_ACORR_CCISM_NOAHSM01_CHIRPSGDAS_2001_2013_EA.nc') & print, ifile ;this needs to be re-done
 
-;ifile = file_search(indir+'ESACCI/STATS_EA_CHIRPS_MERRA2_2001/LVT_ACORR_FINAL.201401010000.d01.nc') & print, ifile
-ifile = file_search(indir+'ESACCI/STATS_SA_CHIRPS_FIX_2001/LVT_ACORR_FINAL.201401010000.d01.nc') & print, ifile
+;ifile = file_search(indir+'ESACCI/STATS_EA_CM2_v2.2_92_14/LVT_ACORR_FINAL.201501010000.d01.nc') & print, ifile
+;ifile = file_search(indir+'ESACCI/STATS_SA_CM2_v2.2_92_14/LVT_ACORR_FINAL.201501010000.d01.nc') & print, ifile
+ifile = file_search(indir+'ESACCI/STATS_WA_CM2_v2.2_92_14/LVT_ACORR_FINAL.201501010000.d01.nc') & print, ifile
 ;ifile = file_search(indir+'LVT_ACORR_FINAL.201401010000.d01_CM_FIX_EA_2001.nc') & print, ifile
 ACORR_fix = get_nc(VOI, ifile)
 ACORR_fix(where(ACORR_fix lt -10))=!values.f_nan
@@ -64,12 +65,12 @@ NX = dims[0]
 NY = dims[1]
 
 ;South africa domain
-map_ulx = 6.05 & map_lrx = 54.55
-map_uly = 6.35 & map_lry = -37.85
+;map_ulx = 6.05 & map_lrx = 54.55
+;map_uly = 6.35 & map_lry = -37.85
 
 ; west africa domain
-;map_ulx = -18.65 & map_lrx = 25.85
-;map_uly = 17.65 & map_lry = 5.35
+map_ulx = -18.65 & map_lrx = 25.85
+map_uly = 17.65 & map_lry = 5.35
 
 ; East africa domain
 ;map_ulx = 22.05 & map_lrx = 51.35
@@ -87,7 +88,7 @@ index = [-1,0.4,0.5,0.6,0.7,0.8]
 tmptr = CONTOUR(ACORR_fix,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
   ASPECT_RATIO=1, Xstyle=1,Ystyle=1, $
   RGB_TABLE=64,/FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors), $
-  TITLE='ANOM CORR MW (2001-2014)', /BUFFER)  &$
+  TITLE='ANOM CORR MW (1992-2015)', /BUFFER)  &$
   m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot) &$;
   m = MAPCONTINENTS(/COUNTRIES,  COLOR = 'black', THICK=2) &$
  ;mycont = MAPCONTINENTS(shapefile, /COUNTRIES,HIRES=1) &$  

@@ -1,10 +1,12 @@
 ;this script is to calculate the aquestat indices
 ; 1/10/16 using this as a start to the SSEB compare (again)
+; 3/18/16 revisit for MERRA2 comparisons
 ; compute MEDIAN 2003-2013 OCT-DEC
 ; then compute 
 ; can i do this quantitativly with the SSEB data here or in LVT?
 
-.compile /home/source/mcnally/scripts_idl/get_nc.pro
+;.compile /home/source/mcnally/scripts_idl/get_nc.pro
+.compile /home/almcnall/Scripts/scripts_idl/get_nc.pro
 
 startyr = 2003 ;start with 1982 since no data in 1981
 endyr = 2015
@@ -21,13 +23,13 @@ nmos = endmo - startmo+1
 ;map_uly = 17.65 & map_lry = 5.35
 
 ;East Africa WRSI/Noah window
-;map_ulx = 22.  & map_lrx = 51.35
-;map_uly = 22.95  & map_lry = -11.75
+map_ulx = 22.  & map_lrx = 51.35
+map_uly = 22.95  & map_lry = -11.75
 
 ;and for VIC...
 ; East africa domain
-map_ulx = 21.875 & map_lrx = 51.125
-map_uly = 23.125 & map_lry = -11.875
+;map_ulx = 21.875 & map_lrx = 51.125
+;map_uly = 23.125 & map_lry = -11.875
 
 
 ;Southern Africa WRSI/Noah window
@@ -35,18 +37,18 @@ map_uly = 23.125 & map_lry = -11.875
 ;NX = 486, NY = 443
 ;map_ulx = 6.05  & map_lrx = 54.55
 ;map_uly = 6.35  & map_lry = -37.85
-res = 4. ;or 10. if its 0.1 degree
+res = 10. ;or 10. if its 0.1 degree
 
 ulx = (180.+map_ulx)*res  & lrx = (180.+map_lrx)*res-1
 uly = (50.-map_uly)*res   & lry = (50.-map_lry)*res-1
 NX = lrx - ulx + 2 
 NY = lry - uly + 2
 
-;data_dir = '/home/ftp_out/people/mcnally/FLDAS/FLDAS4DISC/NOAH_RFE2_GDAS_SA/';FLDAS_NOAH01_B_SA_M.A201507.001.nc
+data_dir = '/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_EA/post/'
 ;data_dir = '/home/ftp_out/people/mcnally/FLDAS/FLDAS4DISC/NOAH_CHIRPSv2.001_MERRA_SA/';FLDAS_NOAH01_B_SA_M.A201507.001.nc
 ;data_dir = '/home/ftp_out/people/mcnally/FLDAS/FLDAS4DISC/NOAH_CHIRPSv2.001_MERRA_WA/';FLDAS_NOAH01_B_SA_M.A201507.001.nc
 ;data_dir = '/home/ftp_out/people/mcnally/FLDAS/FLDAS4DISC/NOAH_CHIRPSv2.001_MERRA_EA/';FLDAS_NOAH01_B_SA_M.A201507.001.nc
-data_dir = '/home/ftp_out/people/mcnally/FLDAS/FLDAS4DISC/VIC_CHIRPSv2.001_MERRA_EA/';FLDAS_NOAH01_B_SA_M.A201507.001.nc
+;data_dir = '/home/ftp_out/people/mcnally/FLDAS/FLDAS4DISC/VIC_CHIRPSv2.001_MERRA_EA/';FLDAS_NOAH01_B_SA_M.A201507.001.nc
 
 Evap = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
 
@@ -60,8 +62,8 @@ for yr=startyr,endyr do begin &$
     m = m-12 &$
     y = y+1 &$
   endif &$
-  ;ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_B_EA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
-  ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_VIC025_B_EA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
+  ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_C_EA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
+  ;ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_VIC025_B_EA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
 
   ;ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_B_WA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
   ;ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_B_SA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
@@ -84,7 +86,8 @@ Evapmm = Evap*86400*30
 ;do i need the mask? if so i'll have to grad 0.25 vic ones too
 ;landmask will give water bodies+ocean, WHC will give land v ocean.
 ;ifile = file_search('/home/sandbox/people/mcnally/LIS_NETCDF_INPUT/lis_input_ea_elev.nc');lis_input_wrsi.ea_oct2feb.nc
-ifile = file_search('/home/sandbox/people/mcnally/LIS_NETCDF_INPUT/lis_input_wrsi.ea_oct2feb.nc');lis_input_wrsi.sa.nc
+;ifile = file_search('/home/sandbox/people/mcnally/LIS_NETCDF_INPUT/lis_input_wrsi.ea_oct2feb.nc');lis_input_wrsi.sa.nc
+ifile = file_search('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/lis_input_wrsi.ea_oct2feb.nc')
 ;ifile = file_search('/home/sandbox/people/mcnally/LIS_NETCDF_INPUT/lis_input_wrsi.sa.nc');lis_input_wrsi.wa.mode.nc
 ;ifile = file_search('/home/sandbox/people/mcnally/LIS_NETCDF_INPUT/lis_input_wrsi.wa.mode.nc')
 ;ifile = file_search('/home/sandbox/people/mcnally/LIS_NETCDF_INPUT/lis_input_wa_elev.nc')
@@ -103,8 +106,8 @@ landmask(where(landmask eq 0))=!values.f_nan
 ;whc(where(whc gt 0))=1
 ;whc(where(whc eq 0))=!values.f_nan
 
-temp =image(landmask, min_value=0, layout=[2,1,1])
-temp =image(whc, min_value=0, layout=[2,1,2], /current)
+;temp =image(landmask, min_value=0, layout=[2,1,1])
+;temp =image(whc, min_value=0, layout=[2,1,2], /current)
 
 ;how much runoff is there every month?
 help, Evapmm
@@ -134,16 +137,15 @@ ncolors = 7
 index = [0,50,70,90,110,130,150];[0,20,60,100,140];  C_VALUE=index,,max_value=200,min_value=0, 
 ;tmptr = CONTOUR(ETHcmpp[*,*,i]*EthPOP,FINDGEN(eNX)/10.+map_ulx+10, FINDGEN(eNY)/10.+map_lry+15, $ ;
 
-w = WINDOW(DIMENSIONS=[700,900])
+;w = WINDOW(DIMENSIONS=[700,900])
 ct=colortable(73)
 for i = 0,12 do begin &$
   ;tmptr = CONTOUR(PON[*,*,i]*landmask,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ 
   ;tmptr = CONTOUR(yemPON[*,*,i],FINDGEN(yNX)/10.+map_ulx+20, FINDGEN(yNY)/10.+map_lry+20, $
     tmptr = CONTOUR(PON[*,*,i],FINDGEN(NX)/res+map_ulx, FINDGEN(NY)/res+map_lry, $
-
     RGB_TABLE=ct, ASPECT_RATIO=1, Xstyle=1,Ystyle=1,$
     ;/FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors), /CURRENT, layout=[5,3,i+1]) &$
-    /FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors)) &$
+    /FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors),/BUFFER) &$
 
   ct[108:108+36,*] = 200  &$
   tmptr.rgb_table=ct  &$
