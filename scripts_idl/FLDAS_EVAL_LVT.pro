@@ -102,15 +102,16 @@ tmptr = CONTOUR(ACORR_fix,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
     
     ;plot the CSV time series files;;;;;;;;;;;;;;;;;;;
     indir = '/home/sandbox/people/mcnally/FLDAS_EVAL/'
+;LVT_test/ESACCI/STATS_EA_CM2_v2.2_92_14
 
   ifile1 = file_search(indir+'MEAN_GABARONE_NOAH_CCI.dat')
   ifile1 = file_search(indir+'MEAN_KRUGER_NOAH_CCI.dat');MEAN_ALL_SA_CCI.dat
   ifile1 = file_search(indir+'MEAN_ALL_SA_CCI.dat');
 
-  ifile1 = file_search(indir+'MEAN_WANKAMA_NOAH_CCI.dat')
-  ifile1 = file_search(indir+'MEAN_NIORO_NOAH_CCI.dat')
-  ifile1 = file_search(indir+'MEAN_ALL_WA_CCI.dat')& print, ifile1
-  ifile1 = file_search(indir+'MEAN_HORN_NOAH_VIC.dat')& print, ifile1
+  ifile1 = file_search(indir+'ESACCI/STATS_WA_CM2_v2.2_92_14/MEAN_WANKAMA.dat')
+  ifile2 = file_search(indir+'ESACCI/STATS_WA_CM2_v2.2_92_14/MEAN_NIORO.dat')
+  ifile3 = file_search(indir+'ESACCI/STATS_WA_CM2_v2.2_92_14/MEAN_ALL.dat')
+  ;ifile1 = file_search(indir+'MEAN_HORN_NOAH_VIC.dat')& print, ifile1
   
   ifile1 = file_search(indir+'MEAN_HORN_NOAHSM01_CHIRPS.dat')& print, ifile1
   ifile1 = file_search(indir+'MEAN_HORN_VICSM01_CHIRPS.dat')& print, ifile1
@@ -132,11 +133,13 @@ tmptr = CONTOUR(ACORR_fix,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
   
   indat3 = read_ascii(ifile3, dlimiter=" ") & help, indat1
   indat3.field01(where(indat3.field01 lt -100))=!values.f_nan
-  
-  CCISM = reform(indat1.field01[11,0:4744],365,13)
-  SM01C = reform(indat2.field01[5,0:4744],365,13);2=chirps
-  SM01G = reform(indat3.field01[5,0:4744],365,13);3=gdas
-  SM01M = reform(indat1.field01[5,0:4744],365,13);1=merra
+  N = (2015-1992)*365
+  CCISMw = reform(indat1.field01[11,0:n-1],365,23)
+  niro = reform(indat2.field01[5,0:n-1],365,23);2=niro
+  CCISMn = reform(indat2.field01[11,0:n-1],365,23);2=niro
+  all = reform(indat3.field01[5,0:n-1],365,23);3=all
+  CCISMa = reform(indat3.field01[11,0:n-1],365,23);3=all
+  wank = reform(indat1.field01[5,0:n-1],365,23);1=wank
 
 
   
@@ -166,10 +169,13 @@ tmptr = CONTOUR(ACORR_fix,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
 
 
   w=window()
-  p1 = plot(mean(ccism,dimension=2,/nan),/current,'orange', name= 'CCI-SM')
-  p2 = plot(mean(SM01M,dimension=2), 'b', linestyle=0, /overplot, name = 'NOAH-MERRA SM01')
-  p3 = plot(mean(SM01C,dimension=2), 'g', linestyle=0, /overplot, name = 'NOAH-CHIRPS SM01')
-  p4 = plot(mean(SM01G,dimension=2), 'c', linestyle=0, /overplot, name = 'NOAH-GDAS SM01')
+  p1 = plot(mean(ccismW,dimension=2,/nan),/buffer,'c', name= 'CCI-SM')
+  p2 = plot(mean(wank,dimension=2), 'b', linestyle=0,  /buffer, /overplot, name = 'wankama')
+  ;p3 = plot(mean(niro,dimension=2), 'r', linestyle=0, /buffer, /overplot, name = 'niro')
+  ;p4 = plot(mean(ccismN,dimension=2), 'orange', linestyle=0, /buffer, /overplot, name = 'niro')
+  p5 = plot(mean(all,dimension=2), 'g', linestyle=0,/buffer,  /overplot, name = 'all')
+  p6 = plot(mean(ccismA,dimension=2), 'yellow', linestyle=0,/buffer,  /overplot, name = 'all')
+p6.save,'/home/almcnall/test.png'
 
   p2.xrange=[0,360]
   p2.xtickinterval=30
@@ -177,7 +183,7 @@ tmptr = CONTOUR(ACORR_fix,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
   p2.ytitle='m3/m3'
   p2.title = 'SM/MW climatology Keban, Turkey'
   ;p3 = plot(mean(SM01,dimension=2), 'b', linestyle=2, /overplot, name = 'NOAH-MERRA SM01')
-  !null = legend(target=[p1,p2,p3,p4], orientation=1, shadow=0)
+  !null = legend(target=[p1,p2,p5,p6], orientation=0, shadow=0)
 
   
   w = window(DIMENSIONS=[1400,500])
