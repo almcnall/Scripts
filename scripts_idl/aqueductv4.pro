@@ -93,11 +93,8 @@ rural = where(pop le 0.05, complement = urban)
 popmask(urban)=1
 
 ;add the landmask to the pop mask
-;ifile = file_search('/home/sandbox/people/mcnally/LIS_NETCDF_INPUT/lis_input_ea_elev.nc');lis_input_wrsi.ea_oct2feb.nc
-;ifile = file_search('/home/sandbox/people/mcnally/LIS_NETCDF_INPUT/lis_input_wrsi.ea_oct2feb.nc');lis_input_wrsi.sa.nc
 ;ifile = file_search('/home/sandbox/people/mcnally/LIS_NETCDF_INPUT/lis_input_wrsi.sa.nc');lis_input_wrsi.wa.mode.nc
 ifile = file_search('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/lis_input_wrsi.sa.nc')
-;ifile = file_search('/home/sandbox/people/mcnally/LIS_NETCDF_INPUT/lis_input_wrsi.wa.mode.nc')
 
 fileID = ncdf_open(ifile)
 qsID = ncdf_varid(fileID,'WRSIMASK'); WHC
@@ -106,10 +103,11 @@ NCDF_close, fileID
 landmask(where(landmask gt 0))=1
 landmask(where(landmask eq 0))=!values.f_nan
 
-;popmask=popmask*landmask
+popmask=popmask*landmask
 
-;temp =image(popmask, min_value=0)
-
+temp =image(popmask, min_value=0, rgb_table=20,/buffer)
+temp.save,'/home/almcnall/test.png'
+close
 ;;compute m3 per capita per month
 ;initialize variables
 ;what is the population?
@@ -146,32 +144,44 @@ CLASS = ['absolute scarcity ', 'scarcity', 'stress', 'no stress']
 ;only use this shapefile when necessary so slow.
 ;shapefile = '/home/code/idl_user_contrib/GAUL_2013_2012_0.shapefiles/G2013_2012_0.shp'
 
-  ncolors = 4
-  RGB_INDICES=[0,41,82,142]
-  index = [0,41,82,142];[0,20,60,100,140];  C_VALUE=index,,max_value=200,min_value=0, 
+  ncolors = 5
+  RGB_INDICES=[0,41,82,500,1000]
+  index = [0,41,82,500,1000];[0,20,60,100,140];  C_VALUE=index,,max_value=200,min_value=0, 
   ;make these match with falkenmark
 ;w = WINDOW(DIMENSIONS=[700,900])
 ct=colortable(25,/reverse)
-;for i = 0, 11 do begin &$
-  ;tmptr = CONTOUR(moncmpp[*,*,i]*popmask,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
-  tmptr = CONTOUR(CMPPcube[*,*,10,33]*popmask,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
+for i = 0, 2 do begin &$
+  print, i &$
+  tmptr = CONTOUR(moncmpp[*,*,i]*popmask,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
+  ;tmptr = CONTOUR(CMPPcube[*,*,10,33]*popmask,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
   ;tmptr = CONTOUR(ETHcmpp[*,*,i]*EthPOP,FINDGEN(eNX)/10.+map_ulx+10, FINDGEN(eNY)/10.+map_lry+15, $ ;
     RGB_TABLE=ct, ASPECT_RATIO=1, Xstyle=1,Ystyle=1,$ ;3x256 array
     /FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors), $
-   ; TITLE=month[i],layout=[3,4,i+1], /CURRENT)  &$
-    TITLE='November',/BUFFER)  &$
+    TITLE=month[i],layout=[3,4,i+1], /CURRENT, BUFFER=1)  &$
+   ; TITLE='November',/BUFFER)  &$
   m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot) &$;
  ; m1 = MAP('Geographic',limit=[map_lry+15,map_ulx+10,map_uly,map_lrx], /overplot) &$;
   ;mycont = MAPCONTINENTS(shapefile, /COUNTRIES,HIRES=1, thick=2) &$
     m = MAPCONTINENTS(/COUNTRIES,  COLOR = 'black', THICK=2) &$
     tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
     tmptr.mapgrid.FONT_SIZE = 0 &$
-cb = colorbar(target=tmptr,ORIENTATION=0,TAPER=1,/BORDER, TITLE='runoff per capita ($m^{3} month^{-1}$)',position=[0.3,0.07,0.7,0.11])
-
-tmptr=image(ROmm[*,*,10,33], max_value=1000000, rgb_table=20, /buffer)
-c=colorbar()
+;cb = colorbar(target=tmptr,ORIENTATION=0,TAPER=1,/BORDER, TITLE='runoff per capita ($m^{3} month^{-1}$)',position=[0.3,0.07,0.7,0.11]) &$
+endfor
+tmptr=image(moncmpp[*,*,10], max_value=8973, rgb_table=20, /buffer)
+c=colorbar(target=tmptr)
 tmptr.save,'/home/almcnall/test.png'
-close
+tmptr.close
+
+indata = moncmpp[*,*,0]
+tmphist = histogram(indata,NBINS=40,OMAX=omax,OMIN=omin, /nan)
+bplot = barplot(tmphist,FILL_COLOR='yellow', /buffer)
+nticks = 5
+xticks = STRARR(nticks)
+for i=0,nticks-1 do xticks(i) = STRING(FORMAT='(I-)',FLOOR(omin + (i * (omax - omin) / (nticks -1))))
+bplot.xtickname = xticks
+bplot.title = 'Histogram of CMPP'
+bplot.save, '/home/almcnall/test.png'
+
 ;endfor
 ;cb = colorbar(target=tmptr,ORIENTATION=0,TAPER=1,/BORDER, TITLE='runoff per capita ($m^{3} month^{-1}$)', position=[0.3,0.04,0.7,0.07]) 
   
