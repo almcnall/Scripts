@@ -105,12 +105,7 @@ landmask(where(landmask eq 0))=!values.f_nan
 
 popmask=popmask*landmask
 
-temp =image(popmask, min_value=0, rgb_table=20,/buffer)
-temp.save,'/home/almcnall/test.png'
-close
 ;;compute m3 per capita per month
-;initialize variables
-;what is the population?
 pop12 = rebin(pop,NX,NY,nmos) & help, pop12
 popcube  = rebin(pop,NX,NY,nmos,nyrs) & help, popcube
 popmaskcube = rebin(popmask,NX,NY,nmos,nyrs) & help, popmaskcube
@@ -119,7 +114,7 @@ help, ROmm
 ;how much RO per person per month? I guess multiplying by 1000 gets us from mm to m3?
 CMPPcube = (ROmm/popcube)     & help, CMPPcube
 ;CMPPcube = (ROmm/popcube)*1000      & help, CMPPcube
-CMPPcube(where(CMPPcube gt 8973))= 8973
+;CMPPcube(where(CMPPcube gt 8973))= 8973
 
 ;what is the average per person per month (show 12 months)
 
@@ -145,41 +140,44 @@ CLASS = ['absolute scarcity ', 'scarcity', 'stress', 'no stress']
 ;shapefile = '/home/code/idl_user_contrib/GAUL_2013_2012_0.shapefiles/G2013_2012_0.shp'
 
   ncolors = 5
-  RGB_INDICES=[0,41,82,500,1000]
-  index = [0,41,82,500,1000];[0,20,60,100,140];  C_VALUE=index,,max_value=200,min_value=0, 
+  ;RGB_INDICES=[0,41,82,142] ;..these values are nothing like what i had before..
+  ;index = [0,41,82,500,1000];
+  RGB_INDICES=[5000,10000,100000,250000, 750000]
+  index = rgb_indices
   ;make these match with falkenmark
 ;w = WINDOW(DIMENSIONS=[700,900])
 ct=colortable(25,/reverse)
-for i = 0, 2 do begin &$
+for i = 0,11 do begin &$
   print, i &$
-  tmptr = CONTOUR(moncmpp[*,*,i]*popmask,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
+  tmptr = CONTOUR(monRO[*,*,i]*popmask,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
   ;tmptr = CONTOUR(CMPPcube[*,*,10,33]*popmask,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
   ;tmptr = CONTOUR(ETHcmpp[*,*,i]*EthPOP,FINDGEN(eNX)/10.+map_ulx+10, FINDGEN(eNY)/10.+map_lry+15, $ ;
     RGB_TABLE=ct, ASPECT_RATIO=1, Xstyle=1,Ystyle=1,$ ;3x256 array
     /FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors), $
-    TITLE=month[i],layout=[3,4,i+1], /CURRENT, BUFFER=1)  &$
+    TITLE=month[i],layout=[4,3,i+1], /CURRENT, BUFFER=1)  &$
    ; TITLE='November',/BUFFER)  &$
   m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot) &$;
  ; m1 = MAP('Geographic',limit=[map_lry+15,map_ulx+10,map_uly,map_lrx], /overplot) &$;
   ;mycont = MAPCONTINENTS(shapefile, /COUNTRIES,HIRES=1, thick=2) &$
-    m = MAPCONTINENTS(/COUNTRIES,  COLOR = 'black', THICK=2) &$
+    m = MAPCONTINENTS(/COUNTRIES,  COLOR = 'black', THICK=1) &$
     tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
     tmptr.mapgrid.FONT_SIZE = 0 &$
 ;cb = colorbar(target=tmptr,ORIENTATION=0,TAPER=1,/BORDER, TITLE='runoff per capita ($m^{3} month^{-1}$)',position=[0.3,0.07,0.7,0.11]) &$
 endfor
-tmptr=image(moncmpp[*,*,10], max_value=8973, rgb_table=20, /buffer)
-c=colorbar(target=tmptr)
-tmptr.save,'/home/almcnall/test.png'
+cb = colorbar(target=tmptr,ORIENTATION=0,TAPER=1,/BORDER, TITLE='runoff per capita ($m^{3} month^{-1}$)',position=[0.3,0.02,0.7,0.04])
+tmptr.save,'/home/almcnall/test2.png'
 tmptr.close
 
-indata = moncmpp[*,*,0]
-tmphist = histogram(indata,NBINS=40,OMAX=omax,OMIN=omin, /nan)
-bplot = barplot(tmphist,FILL_COLOR='yellow', /buffer)
+;i think i need to check how pop was computed. pop less than 1 doesn't make for good ratios.
+indata = pop12[*,*,0]
+omax=10
+tmphist = histogram(indata,NBINS=100,/nan)
+bplot = barplot(tmphist,FILL_COLOR='yellow', yrange=[0,100], /buffer)
 nticks = 5
 xticks = STRARR(nticks)
 for i=0,nticks-1 do xticks(i) = STRING(FORMAT='(I-)',FLOOR(omin + (i * (omax - omin) / (nticks -1))))
 bplot.xtickname = xticks
-bplot.title = 'Histogram of CMPP'
+bplot.title = 'Histogram of pop12'
 bplot.save, '/home/almcnall/test.png'
 
 ;endfor
@@ -188,6 +186,7 @@ bplot.save, '/home/almcnall/test.png'
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;now sum the months that have water scaricity
 ;do scarcity and absolute scaricity (<83)
+;why are the units with hymap so off?
 help, monCMPP  
 countmap = monCMPP[*,*,*]*!values.f_nan
   i=0
@@ -230,15 +229,17 @@ countmap = monCMPP[*,*,*]*!values.f_nan
  ;1. percent of normal. How do I cap the huge events? Stdev mask - will have to think about this one more..
  
  CMPPanom = ROmm*!values.f_nan
+ ROanom = ROmm*!values.f_nan
+
  ;CMPPstd = ROmm*!values.f_nan
 ;CMPPcube(where(CMPPcube gt 8973))= 8973
-CMPPmon(where(CMPPmon gt 8973))= 8973
-print, max(cmppcube(where(finite(cmppcube))))
+;CMPPmon(where(CMPPmon gt 8973))= 8973
+print, max(cmppcube(where(finite(cmppcube))));yeah - CMPP gets larger ..when it should get smaller...
  
  for y = 0,nyrs-1 do begin &$
    for m = 0,11 do begin &$
      CMPPanom[*,*,m,y] = CMPPcube[*,*,m,y]/monCMPP[*,*,m] &$
-     ;CMPPstd[*,*,m,y] = stddev(CMPPcube[*,*,m,*],dimension=4) &$
+     ROanom[*,*,m,y] = RO[*,*,m,y]/monRO[*,*,m] &$
    endfor &$
  endfor
  
@@ -255,6 +256,8 @@ print, max(cmppcube(where(finite(cmppcube))))
  
  ;put a cap on percent of normal before writing out.
  CMPPanom(where(CMPPanom gt 2))=2
+ ROanom(where(ROanom gt 2))=2
+
  ;apply the pop mask before writing out.
  CMPPout = CMPPanom*popmaskcube
  ;ETHout = CMPPout[100:NX-1,150:NY-1,*,*]*100 & help, EthOUT
@@ -262,9 +265,9 @@ print, max(cmppcube(where(finite(cmppcube))))
  ;w = WINDOW(DIMENSIONS=[900,700])
  ;tmptr = CONTOUR(nmos*popmask,FINDGEN(NX)/10. + map_ulx, FINDGEN(NY)/10. + map_lry, $
  ;tmptr = CONTOUR(EthPON[*,*,7,33]*100*Ethpop,FINDGEN(eNX)/10. + map_ulx+10, FINDGEN(eNY)/10. + map_lry+15, RGB_TABLE=ct,$
- tmptr = CONTOUR(CMPPanom[*,*,11,nyrs-2]*100*popmask,FINDGEN(NX)/10. + map_ulx, FINDGEN(NY)/10. + map_lry, RGB_TABLE=ct,$
+ tmptr = CONTOUR(ROanom[*,*,10,nyrs-2]*100*popmask,FINDGEN(NX)/10. + map_ulx, FINDGEN(NY)/10. + map_lry, RGB_TABLE=ct,$
    /FILL, ASPECT_RATIO=1, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors), layout=[1,1,1],$
-   TITLE='Dec percent of normal water availability', MAP_PROJECTION='geographic',Xstyle=1,Ystyle=1, /BUFFER)  &$
+   TITLE='Nov percent of normal water availability', MAP_PROJECTION='geographic',Xstyle=1,Ystyle=1, /BUFFER)  &$
    tmptr.rgb_table = reverse(tmptr.rgb_table,2)
  tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
    tmptr.mapgrid.FONT_SIZE = 0 &$
@@ -273,9 +276,9 @@ print, max(cmppcube(where(finite(cmppcube))))
   ; mycont = MAPCONTINENTS(shapefile, /COUNTRIES,HIRES=1) &$
    m = MAPCONTINENTS(/COUNTRIES,  COLOR = 'black', THICK=2) &$
    cb = colorbar(target=tmptr,ORIENTATION=0,TAPER=1,/BORDER, TITLE='precent of normal', position=[0.3,0.07,0.7,0.11])
-tmptr = image(CMPPout[*,*,0,34],rgb_table=4,/buffer, title = 'jan CM/pp')
-c=colorbar()
-   tmptr.save,'/home/almcnall/test.png'
+;tmptr = image(CMPPout[*,*,0,34],rgb_table=4,/buffer, title = 'jan CM/pp')
+;c=colorbar()
+   tmptr.save,'/home/almcnall/test3.png'
 
 temp = image(EthPON[*,*,8,33]*Ethpop*100, rgb_table=72)
 
