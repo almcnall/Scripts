@@ -4,6 +4,7 @@
 ;03/03/16 update for discover
 ;03/10/16 update with Jan. CHIRPS+MERRA2 data for Chemonics
 ;03/20/16 update with the HYMAP data
+;03/24/14 update with average (not sum) hymap data
 
 .compile /home/almcnall/Scripts/scripts_idl/get_nc.pro
 ;.compile /home/source/mcnally/scripts_idl/get_nc.pro
@@ -39,7 +40,7 @@ NY = lry - uly + 2
 
 ;data_dir = '/home/ftp_out/people/mcnally/FLDAS/FLDAS4DISC/NOAH_RFE2_GDAS_SA/';FLDAS_NOAH01_B_SA_M.A201507.001.nc
 ;data_dir='/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/Noah33_CHIRPS_MERRA2_SA/post/'
-data_dir='/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/Noah33_CHIRPS_MERRA2_runs/HYMAP/OUTPUT_SA1981/post/'
+data_dir='/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_SA/HYMAP/OUTPUT_SA1981/post/'
 
 Qsub = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
 Qsuf = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
@@ -89,7 +90,7 @@ POP = read_tiff(indir+'SAfrica_POP_10km.tiff')
 
 
 popmask = pop*!values.f_nan
-rural = where(pop le 0.05, complement = urban)
+rural = where(pop lt 1, complement = urban)
 popmask(urban)=1
 
 ;add the landmask to the pop mask
@@ -103,7 +104,7 @@ NCDF_close, fileID
 landmask(where(landmask gt 0))=1
 landmask(where(landmask eq 0))=!values.f_nan
 
-popmask=popmask*landmask
+;popmask=popmask*landmask
 
 ;;compute m3 per capita per month
 pop12 = rebin(pop,NX,NY,nmos) & help, pop12
@@ -139,23 +140,23 @@ CLASS = ['absolute scarcity ', 'scarcity', 'stress', 'no stress']
 ;only use this shapefile when necessary so slow.
 ;shapefile = '/home/code/idl_user_contrib/GAUL_2013_2012_0.shapefiles/G2013_2012_0.shp'
 
-  ncolors = 5
-  ;RGB_INDICES=[0,41,82,142] ;..these values are nothing like what i had before..
+  ncolors = 4
+  RGB_INDICES=[0,41,82,142] ;..these values are nothing like what i had before..
   ;index = [0,41,82,500,1000];
-  RGB_INDICES=[5000,10000,100000,250000, 750000]
+  ;RGB_INDICES=[50,125, 250,500, 1000]
   index = rgb_indices
   ;make these match with falkenmark
 ;w = WINDOW(DIMENSIONS=[700,900])
 ct=colortable(25,/reverse)
-for i = 0,11 do begin &$
+;for i = 0,11 do begin &$
   print, i &$
-  tmptr = CONTOUR(monRO[*,*,i]*popmask,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
-  ;tmptr = CONTOUR(CMPPcube[*,*,10,33]*popmask,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
+  ;tmptr = CONTOUR(monCMPP[*,*,i]*popmask,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
+  tmptr = CONTOUR(CMPPcube[*,*,0,34]*popmask,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
   ;tmptr = CONTOUR(ETHcmpp[*,*,i]*EthPOP,FINDGEN(eNX)/10.+map_ulx+10, FINDGEN(eNY)/10.+map_lry+15, $ ;
     RGB_TABLE=ct, ASPECT_RATIO=1, Xstyle=1,Ystyle=1,$ ;3x256 array
     /FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors), $
-    TITLE=month[i],layout=[4,3,i+1], /CURRENT, BUFFER=1)  &$
-   ; TITLE='November',/BUFFER)  &$
+   ; TITLE=month[i],layout=[4,3,i+1], /CURRENT, /BUFFER)  &$
+    TITLE='Jan',/BUFFER)  &$
   m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot) &$;
  ; m1 = MAP('Geographic',limit=[map_lry+15,map_ulx+10,map_uly,map_lrx], /overplot) &$;
   ;mycont = MAPCONTINENTS(shapefile, /COUNTRIES,HIRES=1, thick=2) &$
@@ -163,10 +164,10 @@ for i = 0,11 do begin &$
     tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
     tmptr.mapgrid.FONT_SIZE = 0 &$
 ;cb = colorbar(target=tmptr,ORIENTATION=0,TAPER=1,/BORDER, TITLE='runoff per capita ($m^{3} month^{-1}$)',position=[0.3,0.07,0.7,0.11]) &$
-endfor
-cb = colorbar(target=tmptr,ORIENTATION=0,TAPER=1,/BORDER, TITLE='runoff per capita ($m^{3} month^{-1}$)',position=[0.3,0.02,0.7,0.04])
-tmptr.save,'/home/almcnall/test2.png'
-tmptr.close
+;endfor
+cb = colorbar(target=tmptr,ORIENTATION=0,TAPER=1,/BORDER, TITLE='runoff per capita ($m^{3} month^{-1}$)',position=[0.3,0.03,0.7,0.04])
+tmptr.save,'/home/almcnall/test3.png'
+close
 
 ;i think i need to check how pop was computed. pop less than 1 doesn't make for good ratios.
 indata = pop12[*,*,0]
@@ -265,9 +266,9 @@ print, max(cmppcube(where(finite(cmppcube))));yeah - CMPP gets larger ..when it 
  ;w = WINDOW(DIMENSIONS=[900,700])
  ;tmptr = CONTOUR(nmos*popmask,FINDGEN(NX)/10. + map_ulx, FINDGEN(NY)/10. + map_lry, $
  ;tmptr = CONTOUR(EthPON[*,*,7,33]*100*Ethpop,FINDGEN(eNX)/10. + map_ulx+10, FINDGEN(eNY)/10. + map_lry+15, RGB_TABLE=ct,$
- tmptr = CONTOUR(ROanom[*,*,10,nyrs-2]*100*popmask,FINDGEN(NX)/10. + map_ulx, FINDGEN(NY)/10. + map_lry, RGB_TABLE=ct,$
+ tmptr = CONTOUR(ROanom[*,*,0,nyrs-1]*100*popmask,FINDGEN(NX)/10. + map_ulx, FINDGEN(NY)/10. + map_lry, RGB_TABLE=ct,$
    /FILL, ASPECT_RATIO=1, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors), layout=[1,1,1],$
-   TITLE='Nov percent of normal water availability', MAP_PROJECTION='geographic',Xstyle=1,Ystyle=1, /BUFFER)  &$
+   TITLE='Jan percent of normal water availability', MAP_PROJECTION='geographic',Xstyle=1,Ystyle=1, /BUFFER)  &$
    tmptr.rgb_table = reverse(tmptr.rgb_table,2)
  tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
    tmptr.mapgrid.FONT_SIZE = 0 &$
@@ -382,18 +383,19 @@ xind = gxind
 yind = gyind
 YOI = 2016
 YOI2 = 2015
-
+YOI3=2014
 ;p1 = barplot(mean(mean(monCMPP[hulx:hlrx,hlry:huly,*],dimension=1,/NAN),dimension=1,/NAN),fill_color='c', name='avg')
 p1 = barplot(mean(mean(monCMPP[xind,yind,*],dimension=1,/NAN),dimension=1,/NAN),fill_color='c', name='avg', /BUFFER)
 p2 = plot(mean(mean(CMPPcube[xind,yind,*,YOI-startyr],dimension=1,/NAN),dimension=1,/NAN), /overplot, thick=3, name=string(YOI), /BUFFER)
 p3 = plot(mean(mean(CMPPcube[xind,yind,*,YOI2-startyr],dimension=1,/NAN),dimension=1,/NAN), /overplot, thick=3, linestyle=2, name=string(YOI2), /BUFFER)
+p4 = plot(mean(mean(CMPPcube[xind,yind,*,YOI3-startyr],dimension=1,/NAN),dimension=1,/NAN), /overplot, thick=3, linestyle=3, name=string(YOI3), /BUFFER)
 
-p3.yrange=[0,1400]
+;p3.yrange=[0,2400]
 p3.xrange=[0,11]
 p3.xtickinterval=1
 p3.xtickname=month
 p3.xminor=0
-line=polyline([0,11],[83,83],/data,target=p3,/overplot)
+line=polyline([0,11],[142,142],/data,target=p3,/overplot)
 ;p1.title = string([hmap_lrx, hmap_ulx, hmap_uly, hmap_lry])
 ;p1.title = 'Mpala Kenya 37E, 0.3N';'Adwa, Tigray (39.4E,14N)';;'Yirol, South Sudan (30.26E, 6.6N)';'Bale (39E,7N)';Sheka (35.46,8.8N)';
 ;p1.title = 'Yirol, South Sudan (30.26E, 6.6N)';'Bale (39E,7N)';Sheka (35.46,8.8N)';
@@ -406,7 +408,7 @@ p1.title = 'Gaborone Botswanna (25.9E, 24.7S)';;'Yirol, South Sudan (30.26E, 6.6
 
 ;p1.title = 'Wankama, Niger (2.63E, 13.645N)';;'Yirol, South Sudan (30.26E, 6.6N)';'Bale (39E,7N)';Sheka (35.46,8.8N)';
 
-!null = legend(target=[p1,p2,p3], position=[0.75,0.75]) 
+!null = legend(target=[p1,p2,p3,p4], position=[0.75,0.75]) 
 p3.ytitle = 'runoff (m3) per person per month'
 p1.save,'/home/almcnall/GBD_TS.png'
 
