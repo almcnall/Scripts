@@ -24,14 +24,14 @@ nmos = endmo - startmo+1
 ;map_uly = 17.65 & map_lry = 5.35
 
 ;East Africa WRSI/Noah window
-;map_ulx = 22.  & map_lrx = 51.35
-;map_uly = 22.95  & map_lry = -11.75
+map_ulx = 22.  & map_lrx = 51.35
+map_uly = 22.95  & map_lry = -11.75
 
 ;Southern Africa WRSI/Noah window
 ;Southern Africa (37.85 S - 6.35 N; 6.05 E - 54.55 E) 
 ;NX = 486, NY = 443
-map_ulx = 6.05  & map_lrx = 54.55
-map_uly = 6.35  & map_lry = -37.85
+;map_ulx = 6.05  & map_lrx = 54.55
+;map_uly = 6.35  & map_lry = -37.85
 
 ulx = (180.+map_ulx)*10.  & lrx = (180.+map_lrx)*10.-1
 uly = (50.-map_uly)*10.   & lry = (50.-map_lry)*10.-1
@@ -40,7 +40,8 @@ NY = lry - uly + 2
 
 ;data_dir = '/home/ftp_out/people/mcnally/FLDAS/FLDAS4DISC/NOAH_RFE2_GDAS_SA/';FLDAS_NOAH01_B_SA_M.A201507.001.nc
 ;data_dir='/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/Noah33_CHIRPS_MERRA2_SA/post/'
-data_dir='/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_SA/HYMAP/OUTPUT_SA1981/post/'
+;data_dir='/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_SA/HYMAP/OUTPUT_SA1981/post/'
+data_dir='/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_EA/HYMAP/OUTPUT_EA1981/post/'
 
 Qsub = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
 Qsuf = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
@@ -56,7 +57,9 @@ for yr=startyr,endyr do begin &$
   endif &$
   ;fileID = ncdf_open(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_B_EA_M.A'',I4.4,I2.2,''.001.nc'')',y,m), /nowrite) &$
   ;ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_C_SA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
-  ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_H_SA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
+  ;ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_H_SA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
+  ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_H_EA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
+
 
   ;VOI = 'Qs_tavg' &$ ;RiverStor_tavg
   VOI = 'RiverStor_tavg' &$ ;
@@ -85,7 +88,8 @@ indir = '/discover/nobackup/almcnall/Africa-POP/'
 ;POP = read_tiff(indir+'EAfrica_POP_10km.tiff'); /home/sandbox/people/mcnally/Africa-POP/EAfricaYEM_POP_10km.tiff
 
 ;POP = read_tiff(indir+'EAfricaYEM_POP_10km.tiff')
-POP = read_tiff(indir+'SAfrica_POP_10km.tiff')
+;POP = read_tiff(indir+'SAfrica_POP_10km.tiff')
+POP = read_tiff(indir+'EAfrica_POP_10km.tiff')
 ;POP = read_tiff(indir+'WAfrica_POP_10km.tiff')
 
 
@@ -148,15 +152,15 @@ CLASS = ['absolute scarcity ', 'scarcity', 'stress', 'no stress']
   ;make these match with falkenmark
 ;w = WINDOW(DIMENSIONS=[700,900])
 ct=colortable(25,/reverse)
-;for i = 0,11 do begin &$
+for i = 0,11 do begin &$
   print, i &$
-  ;tmptr = CONTOUR(monCMPP[*,*,i]*popmask,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
-  tmptr = CONTOUR(CMPPcube[*,*,0,34]*popmask,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
+  tmptr = CONTOUR(monCMPP[*,*,i]*popmask,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
+  ;tmptr = CONTOUR(CMPPcube[*,*,0,34]*popmask,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
   ;tmptr = CONTOUR(ETHcmpp[*,*,i]*EthPOP,FINDGEN(eNX)/10.+map_ulx+10, FINDGEN(eNY)/10.+map_lry+15, $ ;
     RGB_TABLE=ct, ASPECT_RATIO=1, Xstyle=1,Ystyle=1,$ ;3x256 array
     /FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors), $
-   ; TITLE=month[i],layout=[4,3,i+1], /CURRENT, /BUFFER)  &$
-    TITLE='Jan',/BUFFER)  &$
+    TITLE=month[i],layout=[4,3,i+1], /CURRENT, /BUFFER)  &$
+   ; TITLE='Jan',/BUFFER)  &$
   m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot) &$;
  ; m1 = MAP('Geographic',limit=[map_lry+15,map_ulx+10,map_uly,map_lrx], /overplot) &$;
   ;mycont = MAPCONTINENTS(shapefile, /COUNTRIES,HIRES=1, thick=2) &$
@@ -164,7 +168,7 @@ ct=colortable(25,/reverse)
     tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
     tmptr.mapgrid.FONT_SIZE = 0 &$
 ;cb = colorbar(target=tmptr,ORIENTATION=0,TAPER=1,/BORDER, TITLE='runoff per capita ($m^{3} month^{-1}$)',position=[0.3,0.07,0.7,0.11]) &$
-;endfor
+endfor
 cb = colorbar(target=tmptr,ORIENTATION=0,TAPER=1,/BORDER, TITLE='runoff per capita ($m^{3} month^{-1}$)',position=[0.3,0.03,0.7,0.04])
 tmptr.save,'/home/almcnall/test3.png'
 close
@@ -244,11 +248,11 @@ print, max(cmppcube(where(finite(cmppcube))));yeah - CMPP gets larger ..when it 
    endfor &$
  endfor
  
-; EthPON = CMPPanom[100:NX-1,150:NY-1,*,*] & help, EthPON
-; EthPOP = popmask[100:NX-1,150:NY-1] & help, EthPOP
-; dims = size(EthPOP, /dimension)
-; eNX = dims[0]
-; eNY = dims[1]
+ EthPON = CMPPanom[100:NX-1,150:NY-1,*,*] & help, EthPON
+ EthPOP = popmask[100:NX-1,150:NY-1] & help, EthPOP
+ dims = size(EthPOP, /dimension)
+ eNX = dims[0]
+ eNY = dims[1]
   
  ncolors=4
  RGB_INDICES=[0,25,50,85,125]
@@ -265,14 +269,14 @@ print, max(cmppcube(where(finite(cmppcube))));yeah - CMPP gets larger ..when it 
 
  ;w = WINDOW(DIMENSIONS=[900,700])
  ;tmptr = CONTOUR(nmos*popmask,FINDGEN(NX)/10. + map_ulx, FINDGEN(NY)/10. + map_lry, $
- ;tmptr = CONTOUR(EthPON[*,*,7,33]*100*Ethpop,FINDGEN(eNX)/10. + map_ulx+10, FINDGEN(eNY)/10. + map_lry+15, RGB_TABLE=ct,$
- tmptr = CONTOUR(ROanom[*,*,0,nyrs-1]*100*popmask,FINDGEN(NX)/10. + map_ulx, FINDGEN(NY)/10. + map_lry, RGB_TABLE=ct,$
+ ;tmptr = CONTOUR(EthPON[*,*,7,nyrs-2]*100*Ethpop,FINDGEN(eNX)/10. + map_ulx+10, FINDGEN(eNY)/10. + map_lry+15, RGB_TABLE=ct,$
+ tmptr = CONTOUR(ROanom[*,*,1,nyrs-1]*100*popmask,FINDGEN(NX)/10. + map_ulx, FINDGEN(NY)/10. + map_lry, RGB_TABLE=ct,$
    /FILL, ASPECT_RATIO=1, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors), layout=[1,1,1],$
-   TITLE='Jan percent of normal water availability', MAP_PROJECTION='geographic',Xstyle=1,Ystyle=1, /BUFFER)  &$
+   TITLE='Feb percent of normal water availability', MAP_PROJECTION='geographic',Xstyle=1,Ystyle=1, /BUFFER)  &$
    tmptr.rgb_table = reverse(tmptr.rgb_table,2)
  tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
    tmptr.mapgrid.FONT_SIZE = 0 &$
-  ; m1 = MAP('Geographic',limit=[map_lry+15,map_ulx+10,map_uly,map_lrx], /overplot) &$;
+   ;m1 = MAP('Geographic',limit=[map_lry+15,map_ulx+10,map_uly,map_lrx], /overplot) &$;
    m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot) &$;
   ; mycont = MAPCONTINENTS(shapefile, /COUNTRIES,HIRES=1) &$
    m = MAPCONTINENTS(/COUNTRIES,  COLOR = 'black', THICK=2) &$
