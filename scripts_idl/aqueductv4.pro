@@ -24,14 +24,14 @@ nmos = endmo - startmo+1
 ;map_uly = 17.65 & map_lry = 5.35
 
 ;East Africa WRSI/Noah window
-map_ulx = 22.  & map_lrx = 51.35
-map_uly = 22.95  & map_lry = -11.75
+;map_ulx = 22.  & map_lrx = 51.35
+;map_uly = 22.95  & map_lry = -11.75
 
 ;Southern Africa WRSI/Noah window
 ;Southern Africa (37.85 S - 6.35 N; 6.05 E - 54.55 E) 
 ;NX = 486, NY = 443
-;map_ulx = 6.05  & map_lrx = 54.55
-;map_uly = 6.35  & map_lry = -37.85
+map_ulx = 6.05  & map_lrx = 54.55
+map_uly = 6.35  & map_lry = -37.85
 
 ulx = (180.+map_ulx)*10.  & lrx = (180.+map_lrx)*10.-1
 uly = (50.-map_uly)*10.   & lry = (50.-map_lry)*10.-1
@@ -40,8 +40,8 @@ NY = lry - uly + 2
 
 ;data_dir = '/home/ftp_out/people/mcnally/FLDAS/FLDAS4DISC/NOAH_RFE2_GDAS_SA/';FLDAS_NOAH01_B_SA_M.A201507.001.nc
 ;data_dir='/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/Noah33_CHIRPS_MERRA2_SA/post/'
-;data_dir='/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_SA/HYMAP/OUTPUT_SA1981/post/'
-data_dir='/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_EA/HYMAP/OUTPUT_EA1981/post/'
+data_dir='/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_SA/HYMAP/OUTPUT_SA1981/post/'
+;data_dir='/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_EA/HYMAP/OUTPUT_EA1981/post/'
 
 Qsub = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
 Qsuf = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
@@ -57,8 +57,8 @@ for yr=startyr,endyr do begin &$
   endif &$
   ;fileID = ncdf_open(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_B_EA_M.A'',I4.4,I2.2,''.001.nc'')',y,m), /nowrite) &$
   ;ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_C_SA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
-  ;ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_H_SA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
-  ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_H_EA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
+  ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_H_SA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
+  ;ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_H_EA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
 
 
   ;VOI = 'Qs_tavg' &$ ;RiverStor_tavg
@@ -88,13 +88,13 @@ indir = '/discover/nobackup/almcnall/Africa-POP/'
 ;POP = read_tiff(indir+'EAfrica_POP_10km.tiff'); /home/sandbox/people/mcnally/Africa-POP/EAfricaYEM_POP_10km.tiff
 
 ;POP = read_tiff(indir+'EAfricaYEM_POP_10km.tiff')
-;POP = read_tiff(indir+'SAfrica_POP_10km.tiff')
-POP = read_tiff(indir+'EAfrica_POP_10km.tiff')
+POP = read_tiff(indir+'SAfrica_POP_10km.tiff')
+;POP = read_tiff(indir+'EAfrica_POP_10km.tiff')
 ;POP = read_tiff(indir+'WAfrica_POP_10km.tiff')
 
 
 popmask = pop*!values.f_nan
-rural = where(pop lt 1, complement = urban)
+rural = where(pop lt 0.05, complement = urban)
 popmask(urban)=1
 
 ;add the landmask to the pop mask
@@ -117,6 +117,7 @@ popmaskcube = rebin(popmask,NX,NY,nmos,nyrs) & help, popmaskcube
 ;how much runoff is there every month?
 help, ROmm
 ;how much RO per person per month? I guess multiplying by 1000 gets us from mm to m3?
+
 CMPPcube = (ROmm/popcube)     & help, CMPPcube
 ;CMPPcube = (ROmm/popcube)*1000      & help, CMPPcube
 ;CMPPcube(where(CMPPcube gt 8973))= 8973
@@ -270,9 +271,9 @@ print, max(cmppcube(where(finite(cmppcube))));yeah - CMPP gets larger ..when it 
  ;w = WINDOW(DIMENSIONS=[900,700])
  ;tmptr = CONTOUR(nmos*popmask,FINDGEN(NX)/10. + map_ulx, FINDGEN(NY)/10. + map_lry, $
  ;tmptr = CONTOUR(EthPON[*,*,7,nyrs-2]*100*Ethpop,FINDGEN(eNX)/10. + map_ulx+10, FINDGEN(eNY)/10. + map_lry+15, RGB_TABLE=ct,$
- tmptr = CONTOUR(ROanom[*,*,1,nyrs-1]*100*popmask,FINDGEN(NX)/10. + map_ulx, FINDGEN(NY)/10. + map_lry, RGB_TABLE=ct,$
+ tmptr = CONTOUR(CMPPanom[*,*,10,nyrs-2]*100*popmask,FINDGEN(NX)/10. + map_ulx, FINDGEN(NY)/10. + map_lry, RGB_TABLE=ct,$
    /FILL, ASPECT_RATIO=1, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors), layout=[1,1,1],$
-   TITLE='Feb percent of normal water availability', MAP_PROJECTION='geographic',Xstyle=1,Ystyle=1, /BUFFER)  &$
+   TITLE='Nov percent of normal water availability', MAP_PROJECTION='geographic',Xstyle=1,Ystyle=1, /BUFFER)  &$
    tmptr.rgb_table = reverse(tmptr.rgb_table,2)
  tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
    tmptr.mapgrid.FONT_SIZE = 0 &$
@@ -383,16 +384,18 @@ yyind = FLOOR( (6.6 - map_lry) / 0.1)
 
 month = ['jan', 'feb', 'mar','apr','may','jun','jul','aug','sep','oct','nov','dec']
 
-xind = gxind
-yind = gyind
-YOI = 2016
+xind = hxind
+yind = hyind
+YOI  = 2016
 YOI2 = 2015
-YOI3=2014
+YOI3 = 2014
+YOI4 = 2013
 ;p1 = barplot(mean(mean(monCMPP[hulx:hlrx,hlry:huly,*],dimension=1,/NAN),dimension=1,/NAN),fill_color='c', name='avg')
 p1 = barplot(mean(mean(monCMPP[xind,yind,*],dimension=1,/NAN),dimension=1,/NAN),fill_color='c', name='avg', /BUFFER)
 p2 = plot(mean(mean(CMPPcube[xind,yind,*,YOI-startyr],dimension=1,/NAN),dimension=1,/NAN), /overplot, thick=3, name=string(YOI), /BUFFER)
 p3 = plot(mean(mean(CMPPcube[xind,yind,*,YOI2-startyr],dimension=1,/NAN),dimension=1,/NAN), /overplot, thick=3, linestyle=2, name=string(YOI2), /BUFFER)
-p4 = plot(mean(mean(CMPPcube[xind,yind,*,YOI3-startyr],dimension=1,/NAN),dimension=1,/NAN), /overplot, thick=3, linestyle=3, name=string(YOI3), /BUFFER)
+p4 = plot(mean(mean(CMPPcube[xind,yind,*,YOI3-startyr],dimension=1,/NAN),dimension=1,/NAN), /overplot, thick=1, name=string(YOI3), /BUFFER)
+p5 = plot(mean(mean(CMPPcube[xind,yind,*,YOI4-startyr],dimension=1,/NAN),dimension=1,/NAN), /overplot, thick=1, linestyle=3,name=string(YOI4), /BUFFER)
 
 ;p3.yrange=[0,2400]
 p3.xrange=[0,11]
@@ -404,15 +407,15 @@ line=polyline([0,11],[142,142],/data,target=p3,/overplot)
 ;p1.title = 'Mpala Kenya 37E, 0.3N';'Adwa, Tigray (39.4E,14N)';;'Yirol, South Sudan (30.26E, 6.6N)';'Bale (39E,7N)';Sheka (35.46,8.8N)';
 ;p1.title = 'Yirol, South Sudan (30.26E, 6.6N)';'Bale (39E,7N)';Sheka (35.46,8.8N)';
 ;p1.title = 'Adwa, Tigray (39.4E,14N)';;'Yirol, South Sudan (30.26E, 6.6N)';'Bale (39E,7N)';Sheka (35.46,8.8N)';
-p1.title = 'Gaborone Botswanna (25.9E, 24.7S)';;'Yirol, South Sudan (30.26E, 6.6N)';'Bale (39E,7N)';Sheka (35.46,8.8N)';
+;p1.title = 'Gaborone Botswanna (25.9E, 24.7S)';;'Yirol, South Sudan (30.26E, 6.6N)';'Bale (39E,7N)';Sheka (35.46,8.8N)';
 ;p1.title = 'Lesotho (28.5E, 29.5S)';;'Yirol, South Sudan (30.26E, 6.6N)';'Bale (39E,7N)';Sheka (35.46,8.8N)';
-;p1.title = 'Hwanae Dam, Swaziland (31E, 26.2S)';;'Yirol, South Sudan (30.26E, 6.6N)';'Bale (39E,7N)';Sheka (35.46,8.8N)';
+p1.title = 'Hwanae Dam, Swaziland (31E, 26.2S)';;'Yirol, South Sudan (30.26E, 6.6N)';'Bale (39E,7N)';Sheka (35.46,8.8N)';
 ;p1.title = 'Windhoek, Namimbia (17E, 22S)';;'Yirol, South Sudan (30.26E, 6.6N)';'Bale (39E,7N)';Sheka (35.46,8.8N)';
 ;p1.title = 'Kariba Dam, Zambia (27.5E, 17S)';;
 
 ;p1.title = 'Wankama, Niger (2.63E, 13.645N)';;'Yirol, South Sudan (30.26E, 6.6N)';'Bale (39E,7N)';Sheka (35.46,8.8N)';
 
-!null = legend(target=[p1,p2,p3,p4], position=[0.75,0.75]) 
+!null = legend(target=[p1,p2,p3,p4,p5], position=[0.75,0.75]) 
 p3.ytitle = 'runoff (m3) per person per month'
 p1.save,'/home/almcnall/GBD_TS.png'
 
