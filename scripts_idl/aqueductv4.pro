@@ -7,6 +7,8 @@
 ;03/24/14 update with average (not sum) hymap data
 
 .compile /home/almcnall/Scripts/scripts_idl/get_nc.pro
+.compile /home/almcnall/Scripts/scripts_idl/nve.pro
+.compile /home/almcnall/Scripts/scripts_idl/mve.pro
 ;.compile /home/source/mcnally/scripts_idl/get_nc.pro
 
 startyr = 1982 ;start with 1982 since no data in 1981
@@ -24,14 +26,14 @@ nmos = endmo - startmo+1
 ;map_uly = 17.65 & map_lry = 5.35
 
 ;East Africa WRSI/Noah window
-;map_ulx = 22.  & map_lrx = 51.35
-;map_uly = 22.95  & map_lry = -11.75
+map_ulx = 22.  & map_lrx = 51.35
+map_uly = 22.95  & map_lry = -11.75
 
 ;Southern Africa WRSI/Noah window
 ;Southern Africa (37.85 S - 6.35 N; 6.05 E - 54.55 E) 
 ;NX = 486, NY = 443
-map_ulx = 6.05  & map_lrx = 54.55
-map_uly = 6.35  & map_lry = -37.85
+;map_ulx = 6.05  & map_lrx = 54.55
+;map_uly = 6.35  & map_lry = -37.85
 
 ulx = (180.+map_ulx)*10.  & lrx = (180.+map_lrx)*10.-1
 uly = (50.-map_uly)*10.   & lry = (50.-map_lry)*10.-1
@@ -39,12 +41,14 @@ NX = lrx - ulx + 2
 NY = lry - uly + 2
 
 ;data_dir = '/home/ftp_out/people/mcnally/FLDAS/FLDAS4DISC/NOAH_RFE2_GDAS_SA/';FLDAS_NOAH01_B_SA_M.A201507.001.nc
-;data_dir='/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/Noah33_CHIRPS_MERRA2_SA/post/'
-data_dir='/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_SA/HYMAP/OUTPUT_SA1981/post/'
+data_dir='/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/Noah33_CHIRPS_MERRA2_EA/post/'
+;data_dir='/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_SA/HYMAP/OUTPUT_SA1981/post/'
 ;data_dir='/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_EA/HYMAP/OUTPUT_EA1981/post/'
 
 Qsub = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
 Qsuf = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
+SM01 = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
+SM02 = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
 
 ;this loop reads in the selected months only
 for yr=startyr,endyr do begin &$
@@ -56,25 +60,34 @@ for yr=startyr,endyr do begin &$
     y = y+1 &$
   endif &$
   ;fileID = ncdf_open(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_B_EA_M.A'',I4.4,I2.2,''.001.nc'')',y,m), /nowrite) &$
-  ;ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_C_SA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
-  ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_H_SA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
+  ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_C_EA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
+  ;ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_H_SA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
   ;ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_H_EA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
 
 
-  ;VOI = 'Qs_tavg' &$ ;RiverStor_tavg
-  VOI = 'RiverStor_tavg' &$ ;
+  VOI = 'Qs_tavg' &$ ;RiverStor_tavg
+  ;VOI = 'RiverStor_tavg' &$ ;
   Qs = get_nc(VOI, ifile) &$
   Qsuf[*,*,i,yr-startyr] = Qs &$
     
-  ;VOI = 'Qsb_tavg' &$ ;FloodStor_tavg
-  VOI = 'FloodStor_tavg' &$ ;
+  VOI = 'Qsb_tavg' &$ ;FloodStor_tavg
+  ;VOI = 'FloodStor_tavg' &$ ;
   Qsb = get_nc(VOI, ifile) &$
   Qsub[*,*,i,yr-startyr] = Qsb &$
+  
+  VOI = 'SoilMoi00_10cm_tavg' &$ ;RiverStor_tavg
+  SM = get_nc(VOI, ifile) &$
+  SM01[*,*,i,yr-startyr] = SM &$
+  
+  VOI = 'SoilMoi10_40cm_tavg' &$ ;RiverStor_tavg
+  SM = get_nc(VOI, ifile) &$
+  SM02[*,*,i,yr-startyr] = SM &$
   
   endfor &$ 
 endfor
 Qsuf(where(Qsuf lt 0)) = 0
-Qsub(where(Qsub lt 0)) = 0
+SM01(where(SM01 lt 0)) = 0
+SM02(where(SM02 lt 0)) = 0
 
 ;for i=0,11 do temp = image(mean(ROmm[*,*,i,*], /nan, dimension=4), layout=[4,3,i+1],max_value=10, /current)
 

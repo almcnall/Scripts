@@ -16,10 +16,11 @@ getRO_percentiles_EastAfrica
 
 ;;get intial runoff and water availability variables from aqueductv3.pro
 help, CMPPcube, monCMPP, EthCMPP, EthPOP
+help, SM01, SM02, RO
 
 ;set oct to december 2015 as nans
 ;sm[*,*,9:11,34] = !values.f_nan
-VAR = CMPPcube
+VAR = SM01;CMPPcube
 ;if you want to compute percentile for sets of months
 ;JAS = mean(sm[*,*,6:8,*],dimension=3,/nan)
 ;allocate array for 4 percentile threshold for each month. Do I want more?

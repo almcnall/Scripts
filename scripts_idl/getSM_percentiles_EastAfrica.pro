@@ -11,7 +11,8 @@ getSM_percentiles_EastAfrica
 ;04/27/15 make soil moisture percentiles for Southern Africa
 ;06/03/15 update soil mositure percentiles for East Africa thru Feb 2015...why is the code set for MAM, OND?
 ;08/12/15 testing the percentiles computed in LVT move into its own script LVT_SMpercentiles
-;;
+;03/31/15 hope this script still works...
+
 ;Kenya HESS window
 ;hmap_ulx = 24. & hmap_lrx = 51.
 ;hmap_uly = 10. & hmap_lry = -10
@@ -34,9 +35,11 @@ NY = lry - uly + 2
 
 ;.compile /home/source/husak/idl_functions/make_wrsi_cmap.pro
 ;;;;;;;;;;;;;;;;;;;;;;;
-data_dir = '/home/sandbox/people/mcnally/NOAH_CHIRPSv2.0_MERRA_EA/SM01_YRMO/'
+;data_dir = '/home/sandbox/people/mcnally/NOAH_CHIRPSv2.0_MERRA_EA/SM01_YRMO/'
+data_dir = '/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_EA/SURFACEMODEL/'
+;maybe compute the average from both the day data and the monthly to check?
 
-startyr = 1981
+startyr = 1982
 endyr = 2015
 nyrs = endyr-startyr+1
 
