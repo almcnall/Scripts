@@ -60,30 +60,30 @@ for yr = startyr,endyr do begin &$
   ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_C_EA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
   ;ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_H_SA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
 
-    VOI = 'Qs_tavg' &$
-    Qs = get_nc(VOI, ifile) &$
-    Qsuf[*,*,i,yr-startyr] = Qs &$
-  
-    VOI = 'Qsb_tavg' &$
-    Qsb = get_nc(VOI, ifile) &$
-    Qsub[*,*,i,yr-startyr] = Qsb &$
+;    VOI = 'Qs_tavg' &$
+;    Qs = get_nc(VOI, ifile) &$
+;    Qsuf[*,*,i,yr-startyr] = Qs &$
+;  
+;    VOI = 'Qsb_tavg' &$
+;    Qsb = get_nc(VOI, ifile) &$
+;    Qsub[*,*,i,yr-startyr] = Qsb &$
   
     VOI = 'SoilMoi00_10cm_tavg' &$
     SM = get_nc(VOI, ifile) &$
     SM01[*,*,i,yr-startyr] = SM &$
   
-    VOI = 'SoilMoi10_40cm_tavg' &$
-    SM = get_nc(VOI, ifile) &$
-    SM02[*,*,i,yr-startyr] = SM &$
+;    VOI = 'SoilMoi10_40cm_tavg' &$
+;    SM = get_nc(VOI, ifile) &$
+;    SM02[*,*,i,yr-startyr] = SM &$
     
   endfor &$ ;i
 endfor ;yr
-Qsuf(where(Qsuf lt 0)) = 0
-Qsub(where(Qsub lt 0)) = 0
+;Qsuf(where(Qsuf lt 0)) = 0
+;Qsub(where(Qsub lt 0)) = 0
 SM01(where(SM01 lt 0)) = 0
-SM02(where(SM02 lt 0)) = 0
+;SM02(where(SM02 lt 0)) = 0
 
-RO = Qsuf+Qsub
+;RO = Qsuf+Qsub
 
 help, Qsuf, Qsub, SM01, SM02, RO
 
@@ -117,49 +117,65 @@ endfor  &$;x
 endfor  &$
 endfor
 
+;ofile = '/home/almcnall/permap_294_348_12_3.bin
+;openw, 1, ofile
+;writeu, 1, permap
+;close,1
+
+permap = fltarr(nx, ny, 12, 3)
+ifile3 = file_search('/home/almcnall/permap_294_348_12_3.bin')
+openr, 1, ifile3
+readu, 1, permap
+close,1
+
+delvar, sm, sm01, sm02, qsub, qsuf, var, npix
 ;ok now i have thresholds for each month - now i just have to count my forecasts.
 ;before i was doing EOS WRSI so that was just one month. Here, I have 5 months to look at.
-grab all 100 for a given month start with Oct.
+;grab all 100 for a given month start with Oct.
+
 
 indir2 = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/ESPtest/Noah33_CM2_ESPboot_OCT2015JAN2016/ENS/ens???/post/'
-ifile2 = file_search(indir2+'FLDAS_NOAH01_C_EA_M.A201510.001_*')
+ifile2 = file_search(indir2+'FLDAS_NOAH01_C_EA_M.A201602.001_*')
 
-octSM01 = fltarr(NX, NY, n_elements(ifile2))
+febSM01 = fltarr(NX, NY, n_elements(ifile2))
 ;so read in each of these files, 
 for i = 0, n_elements(ifile2)-1 do begin &$
   VOI = 'SoilMoi00_10cm_tavg' &$
   SM = get_nc(VOI, ifile2[i]) &$
-  octSM01[*,*,i] = SM &$
+  febSM01[*,*,i] = SM &$
 endfor
 
 ;check the value at each pixel? or can i do whole map vs the threshold, count
-help, permap[*,*,9,*]
+help, permap[*,*,1,*]
 
 ;first look at the low percentile map
 countmap = fltarr(NX,NY,3)*0
-
-for j = 0, n_elements(octSM01[0,0,*])-1 do begin &$
+mo = 1
+for j = 0, n_elements(febSM01[0,0,*])-1 do begin &$
     
     ;do I need the where statement? no this should give me a map of ones.
-    dry = octSM01[*,*,j] lt permap[*,*,9,0] &$
+    dry = febSM01[*,*,j] lt permap[*,*,mo,0] &$
     countmap[*,*,0] = countmap[*,*,0] + dry &$
     
     ;i shouldn't have to do the between since i can subtract at the end since it should equal 100.
     ;but how do i do the subtraction? 
-    avg = octSM01[*,*,j] lt permap[*,*,9,2] &$
+    avg = febSM01[*,*,j] lt permap[*,*,mo,2] &$
     countmap[*,*,1] = countmap[*,*,1] + avg &$
     
-    ;wet = octSM01[*,*,j] ge permap[*,*,9,2] &$
-    ;countmap[*,*,2] = countmap[*,*,2] + wet &$
 endfor
 countmap[*,*,2] = 100
 countmap[*,*,2] = countmap[*,*,2]-countmap[*,*,1]
 countmap[*,*,1] = countmap[*,*,1]-countmap[*,*,0]
 
+ofile = '/home/almcnall/Feb2015_countmap_294_348_3.bin'
+openw,1,ofile
+writeu,1,countmap
+close,1
+
 ;ok so i think that all maps total 100 and I should be able to plot them individually to
 ;get an idea of where it is most likely dry, avg, wet
-
-;c=colorbar()
+p1 = image(countmap[*,*,2], rgb_table=20, title = 'Feb wet count')
+c=colorbar()
 p1.save, '/home/almcnall/drymap.png'
 
 countmap[*,*,1] = countmap[*,*,1]-countmap[*,*,0]
