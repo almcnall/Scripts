@@ -1,17 +1,9 @@
 ; this script is to calculate plot the seasonal forecast senarios.
 ; using the basics from aqueductv4 script for reading in files.
 ; 03/31/16 Organized into ens directories. 
-; 1. read in the historic data to get the low/mid/high threshold. 
-; for each day? so that i can agregate to other time periods? I did this with EOS WRSI, 
-; and the soil moisture percentile turned drought classes.
-; month loop, then yr, then day 
-; read in all days for jan and take average
-; final array [nx,ny,12,35] --> nx,ny,2 (threshold),12
-; alternatively, i should be reading in the monthly data...
-; and just do this agregation for the ensembles. 
-; or maybe this is slow enough to do both with cdo tools.
 
 .compile /home/almcnall/Scripts/scripts_idl/get_nc.pro
+
 ;.compile /home/source/mcnally/scripts_idl/get_nc.pro
 
 startyr = 1982 ;start with 1982 since no data in 1981
@@ -46,7 +38,7 @@ NY = lry - uly + 2
 
 ;data_dir = '/home/ftp_out/people/mcnally/FLDAS/FLDAS4DISC/NOAH_RFE2_GDAS_SA/';FLDAS_NOAH01_B_SA_M.A201507.001.nc
 ;data_dir='/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/Noah33_CHIRPS_MERRA2_SA/post/'
-data_dir='/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_EA/SURFACEMODEL/post/'
+data_dir='/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_EA/post/'
 ;data_dir='/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/ESPtest/Noah33_CM2_ESPboot_OCT2015JAN2016/ENS/'
 
 
@@ -64,35 +56,121 @@ for yr = startyr,endyr do begin &$
     m = m-12 &$
     y = y+1 &$
   endif &$
-  YYYYMM = STRING(FORMAT='(I4.4,I2.2)',y,m) &$
   ;fileID = ncdf_open(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_B_EA_M.A'',I4.4,I2.2,''.001.nc'')',y,m), /nowrite) &$
   ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_C_EA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
   ;ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_H_SA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
-  ;ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_H_EA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
-  ;read in the daily data
-  ifile = file_search(data_dir+YYYYMM+STRING(FORMAT='(''/LIS_HIST_'',I4.4,I2.2,''*'')',y,m)) &$
-    for j = 0,n_elements(ifile)-1 do begin &$
-    VOI = 'Qs_tavg' &$ ;RiverStor_tavg
-    Qs = get_nc(VOI, ifile[j]) &$
-    Qsufo[*,*,j] = Qs &$
+
+    VOI = 'Qs_tavg' &$
+    Qs = get_nc(VOI, ifile) &$
+    Qsuf[*,*,i,yr-startyr] = Qs &$
   
-    ;VOI = 'Qsb_tavg' &$ ;FloodStor_tavg
-  ;  VOI = 'FloodStor_tavg' &$ ;
-  ;  Qsb = get_nc(VOI, ifile) &$
-  ;  Qsub[*,*,i,yr-startyr] = Qsb &$
-    endfor &$; j
-    Qsuf[*,*,i,yr-startyr] = mean(Qsufo,dimension=3, /nan) &$
+    VOI = 'Qsb_tavg' &$
+    Qsb = get_nc(VOI, ifile) &$
+    Qsub[*,*,i,yr-startyr] = Qsb &$
+  
+    VOI = 'SoilMoi00_10cm_tavg' &$
+    SM = get_nc(VOI, ifile) &$
+    SM01[*,*,i,yr-startyr] = SM &$
+  
+    VOI = 'SoilMoi10_40cm_tavg' &$
+    SM = get_nc(VOI, ifile) &$
+    SM02[*,*,i,yr-startyr] = SM &$
+    
   endfor &$ ;i
-  print, y &$
 endfor ;yr
 Qsuf(where(Qsuf lt 0)) = 0
 Qsub(where(Qsub lt 0)) = 0
-
-;for i=0,11 do temp = image(mean(ROmm[*,*,i,*], /nan, dimension=4), layout=[4,3,i+1],max_value=10, /current)
+SM01(where(SM01 lt 0)) = 0
+SM02(where(SM02 lt 0)) = 0
 
 RO = Qsuf+Qsub
-ROmm = RO
-;ROmm  = RO*86400*30 ;YES
+
+help, Qsuf, Qsub, SM01, SM02, RO
+
+;these are the averages, but I want percentiles
+climRO = mean(RO,dimension=4,/nan)
+climSM01 = mean(SM01,dimension=4,/nan)
+climSM02 = mean(SM02,dimension=4,/nan)
+
+help, climRO, climSM01, climSM02
+
+;ok, now define the thresholds with the percenitle function
+VAR = SM01;CMPPcube
+permap = fltarr(nx,ny,12,3)
+for m = 0, 11 do begin &$
+  for x = 0, nx-1 do begin &$
+  for y = 0, ny-1 do begin &$
+  ;skip nans
+  ;test = where(finite(smMar2Sep[x,y,*]),count) &$
+  test = where(finite(VAR[x,y,*,*]),count) &$
+
+  if count eq -1 then continue &$
+  ;look at one pixel time series at a time
+  ;Npix = smMar2Sep[x,y,*] &$
+  Npix = VAR[x,y,m,*] &$
+
+  ;what thresholds did Greg (85<X<115% of normal) and Nick use?
+  ;get threshold values that represent these percentiles.
+  permap[x,y,m,*] = cgPercentiles(Npix, PERCENTILES=[0.33, 0.5, 0.67]) &$
+
+endfor  &$;x
+endfor  &$
+endfor
+
+;ok now i have thresholds for each month - now i just have to count my forecasts.
+;before i was doing EOS WRSI so that was just one month. Here, I have 5 months to look at.
+grab all 100 for a given month start with Oct.
+
+indir2 = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/ESPtest/Noah33_CM2_ESPboot_OCT2015JAN2016/ENS/ens???/post/'
+ifile2 = file_search(indir2+'FLDAS_NOAH01_C_EA_M.A201510.001_*')
+
+octSM01 = fltarr(NX, NY, n_elements(ifile2))
+;so read in each of these files, 
+for i = 0, n_elements(ifile2)-1 do begin &$
+  VOI = 'SoilMoi00_10cm_tavg' &$
+  SM = get_nc(VOI, ifile2[i]) &$
+  octSM01[*,*,i] = SM &$
+endfor
+
+;check the value at each pixel? or can i do whole map vs the threshold, count
+help, permap[*,*,9,*]
+
+;first look at the low percentile map
+countmap = fltarr(NX,NY,3)*0
+
+for j = 0, n_elements(octSM01[0,0,*])-1 do begin &$
+    
+    ;do I need the where statement? no this should give me a map of ones.
+    dry = octSM01[*,*,j] lt permap[*,*,9,0] &$
+    countmap[*,*,0] = countmap[*,*,0] + dry &$
+    
+    ;i shouldn't have to do the between since i can subtract at the end since it should equal 100.
+    ;but how do i do the subtraction? 
+    avg = octSM01[*,*,j] lt permap[*,*,9,2] &$
+    countmap[*,*,1] = countmap[*,*,1] + avg &$
+    
+    ;wet = octSM01[*,*,j] ge permap[*,*,9,2] &$
+    ;countmap[*,*,2] = countmap[*,*,2] + wet &$
+endfor
+countmap[*,*,2] = 100
+countmap[*,*,2] = countmap[*,*,2]-countmap[*,*,1]
+countmap[*,*,1] = countmap[*,*,1]-countmap[*,*,0]
+
+;ok so i think that all maps total 100 and I should be able to plot them individually to
+;get an idea of where it is most likely dry, avg, wet
+
+;c=colorbar()
+p1.save, '/home/almcnall/drymap.png'
+
+countmap[*,*,1] = countmap[*,*,1]-countmap[*,*,0]
+
+
+dry = where(octsm01[*,*,0] lt permap[*,*,9,0]);looking only at ens01 didn't change count...
+
+
+
+
+
 
 ;;;;Plot population;;;;;;;
 indir = '/discover/nobackup/almcnall/Africa-POP/'
