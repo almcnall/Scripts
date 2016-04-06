@@ -94,29 +94,6 @@ climSM02 = mean(SM02,dimension=4,/nan)
 
 help, climRO, climSM01, climSM02
 
-;ok, now define the thresholds with the percenitle function
-VAR = SM01;CMPPcube
-permap = fltarr(nx,ny,12,3)
-for m = 0, 11 do begin &$
-  for x = 0, nx-1 do begin &$
-  for y = 0, ny-1 do begin &$
-  ;skip nans
-  ;test = where(finite(smMar2Sep[x,y,*]),count) &$
-  test = where(finite(VAR[x,y,*,*]),count) &$
-
-  if count eq -1 then continue &$
-  ;look at one pixel time series at a time
-  ;Npix = smMar2Sep[x,y,*] &$
-  Npix = VAR[x,y,m,*] &$
-
-  ;what thresholds did Greg (85<X<115% of normal) and Nick use?
-  ;get threshold values that represent these percentiles.
-  permap[x,y,m,*] = cgPercentiles(Npix, PERCENTILES=[0.33, 0.5, 0.67]) &$
-
-endfor  &$;x
-endfor  &$
-endfor
-
 ;ofile = '/home/almcnall/permap_294_348_12_3.bin
 ;openw, 1, ofile
 ;writeu, 1, permap
@@ -129,37 +106,37 @@ readu, 1, permap
 close,1
 
 delvar, sm, sm01, sm02, qsub, qsuf, var, npix
-;ok now i have thresholds for each month - now i just have to count my forecasts.
-;before i was doing EOS WRSI so that was just one month. Here, I have 5 months to look at.
-;grab all 100 for a given month start with Oct.
 
+;ok now i have thresholds for each month - now i just have to count my forecasts.
+;i have the percentile thresholds, now i read in the data...
 
 indir2 = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/ESPtest/Noah33_CM2_ESPboot_OCT2015JAN2016/ENS/ens???/post/'
-ifile2 = file_search(indir2+'FLDAS_NOAH01_C_EA_M.A201602.001_*')
+MM=10
+ifile2 = file_search(strcompress(indir2+'FLDAS_NOAH01_C_EA_M.A2015'+string(MM)+'.001_*', /remove_all))
 
-febSM01 = fltarr(NX, NY, n_elements(ifile2))
+SM01 = fltarr(NX, NY, n_elements(ifile2))
 ;so read in each of these files, 
 for i = 0, n_elements(ifile2)-1 do begin &$
   VOI = 'SoilMoi00_10cm_tavg' &$
   SM = get_nc(VOI, ifile2[i]) &$
-  febSM01[*,*,i] = SM &$
+  SM01[*,*,i] = SM &$
 endfor
 
 ;check the value at each pixel? or can i do whole map vs the threshold, count
-help, permap[*,*,1,*]
+help, permap[*,*,MM-1,*]
 
 ;first look at the low percentile map
 countmap = fltarr(NX,NY,3)*0
-mo = 1
-for j = 0, n_elements(febSM01[0,0,*])-1 do begin &$
+
+for j = 0, n_elements(SM01[0,0,*])-1 do begin &$
     
     ;do I need the where statement? no this should give me a map of ones.
-    dry = febSM01[*,*,j] lt permap[*,*,mo,0] &$
+    dry = SM01[*,*,j] lt permap[*,*,MM-1,0] &$
     countmap[*,*,0] = countmap[*,*,0] + dry &$
     
     ;i shouldn't have to do the between since i can subtract at the end since it should equal 100.
     ;but how do i do the subtraction? 
-    avg = febSM01[*,*,j] lt permap[*,*,mo,2] &$
+    avg = SM01[*,*,j] lt permap[*,*,MM-1,2] &$
     countmap[*,*,1] = countmap[*,*,1] + avg &$
     
 endfor
@@ -167,10 +144,13 @@ countmap[*,*,2] = 100
 countmap[*,*,2] = countmap[*,*,2]-countmap[*,*,1]
 countmap[*,*,1] = countmap[*,*,1]-countmap[*,*,0]
 
-ofile = '/home/almcnall/Feb2015_countmap_294_348_3.bin'
+ofile = strcompress('/home/almcnall/2015'+string(MM)+'_countmap_294_348_3.bin',/remove_all)
 openw,1,ofile
 writeu,1,countmap
 close,1
+
+;i can also read in Oct2015_countmap_294_348_3.bin start here - tomorrow.
+
 
 ;ok so i think that all maps total 100 and I should be able to plot them individually to
 ;get an idea of where it is most likely dry, avg, wet
