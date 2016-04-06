@@ -36,71 +36,10 @@ uly = (50.-map_uly)*10.   & lry = (50.-map_lry)*10.-1
 NX = lrx - ulx + 2 
 NY = lry - uly + 2
 
-;data_dir = '/home/ftp_out/people/mcnally/FLDAS/FLDAS4DISC/NOAH_RFE2_GDAS_SA/';FLDAS_NOAH01_B_SA_M.A201507.001.nc
-;data_dir='/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/Noah33_CHIRPS_MERRA2_SA/post/'
-data_dir='/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_EA/post/'
-;data_dir='/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/ESPtest/Noah33_CM2_ESPboot_OCT2015JAN2016/ENS/'
-
-
-Qsub = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
-Qsuf = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
-SM01 = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
-SM02 = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
-
-;read in the daily data
-for yr = startyr,endyr do begin &$
-  for i = 0,nmos-1 do begin &$
-  y = yr &$
-  m = startmo + i &$
-  if m gt 12 then begin &$
-    m = m-12 &$
-    y = y+1 &$
-  endif &$
-  ;fileID = ncdf_open(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_B_EA_M.A'',I4.4,I2.2,''.001.nc'')',y,m), /nowrite) &$
-  ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_C_EA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
-  ;ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_H_SA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
-
-;    VOI = 'Qs_tavg' &$
-;    Qs = get_nc(VOI, ifile) &$
-;    Qsuf[*,*,i,yr-startyr] = Qs &$
-;  
-;    VOI = 'Qsb_tavg' &$
-;    Qsb = get_nc(VOI, ifile) &$
-;    Qsub[*,*,i,yr-startyr] = Qsb &$
-  
-    VOI = 'SoilMoi00_10cm_tavg' &$
-    SM = get_nc(VOI, ifile) &$
-    SM01[*,*,i,yr-startyr] = SM &$
-  
-;    VOI = 'SoilMoi10_40cm_tavg' &$
-;    SM = get_nc(VOI, ifile) &$
-;    SM02[*,*,i,yr-startyr] = SM &$
-    
-  endfor &$ ;i
-endfor ;yr
-;Qsuf(where(Qsuf lt 0)) = 0
-;Qsub(where(Qsub lt 0)) = 0
-SM01(where(SM01 lt 0)) = 0
-;SM02(where(SM02 lt 0)) = 0
-
-;RO = Qsuf+Qsub
-
-help, Qsuf, Qsub, SM01, SM02, RO
-
-;these are the averages, but I want percentiles
-climRO = mean(RO,dimension=4,/nan)
-climSM01 = mean(SM01,dimension=4,/nan)
-climSM02 = mean(SM02,dimension=4,/nan)
-
-help, climRO, climSM01, climSM02
-
-;ofile = '/home/almcnall/permap_294_348_12_3.bin
-;openw, 1, ofile
-;writeu, 1, permap
-;close,1
-
+;generate the threshold maps in make_permap.pro
+;so far only SM01 is available.
 permap = fltarr(nx, ny, 12, 3)
-ifile3 = file_search('/home/almcnall/permap_294_348_12_3.bin')
+ifile3 = file_search('/home/almcnall/SM01_permap_294_348_12_3.bin')
 openr, 1, ifile3
 readu, 1, permap
 close,1
@@ -109,7 +48,7 @@ delvar, sm, sm01, sm02, qsub, qsuf, var, npix
 
 ;ok now i have thresholds for each month - now i just have to count my forecasts.
 ;i have the percentile thresholds, now i read in the data...
-
+;i have saved these for SM, so skip this sometimes.
 indir2 = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/ESPtest/Noah33_CM2_ESPboot_OCT2015JAN2016/ENS/ens???/post/'
 MM=10
 ifile2 = file_search(strcompress(indir2+'FLDAS_NOAH01_C_EA_M.A2015'+string(MM)+'.001_*', /remove_all))
@@ -144,27 +83,41 @@ countmap[*,*,2] = 100
 countmap[*,*,2] = countmap[*,*,2]-countmap[*,*,1]
 countmap[*,*,1] = countmap[*,*,1]-countmap[*,*,0]
 
-ofile = strcompress('/home/almcnall/2015'+string(MM)+'_countmap_294_348_3.bin',/remove_all)
-openw,1,ofile
-writeu,1,countmap
-close,1
+;ofile = strcompress('/home/almcnall/2015'+string(MM)+'_countmap_294_348_3.bin',/remove_all)
+;openw,1,ofile
+;writeu,1,countmap
+;close,1
 
 ;i can also read in Oct2015_countmap_294_348_3.bin start here - tomorrow.
+ifile = file_search('/home/almcnall/Oct2015_countmap_294_348_3.bin')
+ifile = file_search('/home/almcnall/Nov2015_countmap_294_348_3.bin')
+ifile = file_search('/home/almcnall/Dec2015_countmap_294_348_3.bin')
+ifile = file_search('/home/almcnall/Jan2015_countmap_294_348_3.bin')
+openr,1,ifile
+readu,1,countmap
+close,1
 
+octCM=countmap
+NovCM=countmap
+DecCM=countmap
+JanCM=countmap
 
-;ok so i think that all maps total 100 and I should be able to plot them individually to
-;get an idea of where it is most likely dry, avg, wet
-p1 = image(countmap[*,*,2], rgb_table=20, title = 'Feb wet count')
-c=colorbar()
-p1.save, '/home/almcnall/drymap.png'
+;read in the 'observed' soil moisture percentile for comparison
+indir = '/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_EA/post/'
+ifile = file_search(indir+'FLDAS_NOAH01_C_EA_M.A201510.001.nc')
+VOI = 'SM01_Percentile'
+SM = get_nc(VOI, ifile)
+;for now just make 3 plots -likelihood of dry, wet, avg. Whats the handle that lets
+;you set plot params without repeating? see CCI paper plots
 
-countmap[*,*,1] = countmap[*,*,1]-countmap[*,*,0]
-
-
-dry = where(octsm01[*,*,0] lt permap[*,*,9,0]);looking only at ens01 didn't change count...
-
-
-
+p1 = image(octCM[*,*,0], rgb_table=51, title = 'oct dry count', /buffer, layout=[4,1,1])
+;p2 = image(octCM[*,*,1], rgb_table=51, title = 'oct avg count', /buffer, layout=[4,1,2], /current)
+p3 = image(octCM[*,*,2], rgb_table=51, title = 'oct wet count', /buffer, layout=[4,1,2], /current)
+c=colorbar(target=p1)
+;something fishy with this plot...try in a bit.
+p4 = image(SM, min_value=0,rgb_table=66, title = 'obs SM percentile', /buffer, layout=[4,1,3], /current)
+c=colorbar(target=p4)
+p1.save, '/home/almcnall/octCM.png'
 
 
 
