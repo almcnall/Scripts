@@ -118,10 +118,10 @@ endfor  &$;x
 endfor  &$
 endfor
 
-;ofile = '/home/almcnall/permap_294_348_12_3.bin
-;openw, 1, ofile
-;writeu, 1, permap
-;close,1
+ofile = '/home/almcnall/SM01_permap_294_348_12_3.bin'
+openw, 1, ofile
+writeu, 1, permap
+close,1
 
 permap = fltarr(nx, ny, 12, 3)
 ifile3 = file_search('/home/almcnall/permap_294_348_12_3.bin')
