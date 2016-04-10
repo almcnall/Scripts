@@ -1,7 +1,7 @@
 ; this script is to calculate plot the seasonal forecast senarios.
 ; using the basics from aqueductv4 script for reading in files.
 ; 03/31/16 Organized into ens directories. 
-
+; 04/09/16 updating colors
 .compile /home/almcnall/Scripts/scripts_idl/get_nc.pro
 
 ;.compile /home/source/mcnally/scripts_idl/get_nc.pro
@@ -96,29 +96,43 @@ countmap[*,*,1] = countmap[*,*,1]-countmap[*,*,0]
 countmap = fltarr(NX,NY,3)*0
 ;i can also read in Oct2015_countmap_294_348_3.bin start here - tomorrow.
 ifile = file_search('/home/almcnall/Oct2015_countmap_294_348_3.bin')
+openr,1,ifile
+readu,1,countmap
+close,1
+octCM=countmap
+
 ifile = file_search('/home/almcnall/Nov2015_countmap_294_348_3.bin')
+openr,1,ifile
+readu,1,countmap
+close,1
+NovCM=countmap
+
 ifile = file_search('/home/almcnall/Dec2015_countmap_294_348_3.bin')
+openr,1,ifile
+readu,1,countmap
+close,1
+
+DecCM=countmap
+
 ifile = file_search('/home/almcnall/Jan2015_countmap_294_348_3.bin')
 openr,1,ifile
 readu,1,countmap
 close,1
 
-octCM=countmap
-NovCM=countmap
-DecCM=countmap
 JanCM=countmap
 
 help, octCM, novCM, decCM, janCM
 
 ;read in the 'observed' soil moisture percentile for comparison
 ;november looks good...
+MM=01
 indir = '/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_EA/post/'
-ifile = file_search(indir+'FLDAS_NOAH01_C_EA_M.A201601.001.nc')
+ifile = file_search(indir+'FLDAS_NOAH01_C_EA_M.A201512.001.nc')
 VOI = 'SM01_Percentile'
 SM = get_nc(VOI, ifile)
 ;for now just make 3 plots -likelihood of dry, wet, avg. Whats the handle that lets
 ;you set plot params without repeating? see CCI paper plots
-CM=janCM
+CM=decCM
 
 ;p1 = image(CM[*,*,0], rgb_table=51, title = 'nov dry count', /buffer, layout=[4,1,1])
 ;p2 = image(CM[*,*,1], rgb_table=51, title = 'nov avg count', /buffer, layout=[4,1,2], /current)
@@ -131,18 +145,18 @@ CM=janCM
 
 ;;;;;;what do i want this plot to look like?;;;;;;;;
 month = ['oct', 'nov', 'dec', 'jan']
-  ncolors = 4
-  RGB_INDICES=[ 20, 40, 60, 80] ;..these values are nothing like what i had before..
+  ncolors = 6
+  RGB_INDICES=[ 10, 20, 30, 35, 45, 55] ;..these values are nothing like what i had before..
   index = rgb_indices
   ct=colortable(51)
 ;for i = 0,11 do begin &$
-i = 1
-j = 3; month
+i = 0 ; dry, wet, percentile
+j = 2 ; month
 print, i &$
-  tmptr = CONTOUR(CM[*,*,i],FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
+  tmptr = CONTOUR(CM[*,*,0],FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
     RGB_TABLE=ct, ASPECT_RATIO=1, Xstyle=1,Ystyle=1,$ ;3x256 array
     /FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors), $
-    TITLE=month[j],layout=[3,1,i+1], /CURRENT, /BUFFER)  &$
+    TITLE=month[j],layout=[3,1,1], /CURRENT, /BUFFER)  &$
    ; TITLE='Jan',/BUFFER)  &$
   m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot) &$;
  ; m1 = MAP('Geographic',limit=[map_lry+15,map_ulx+10,map_uly,map_lrx], /overplot) &$;
@@ -150,25 +164,37 @@ print, i &$
     m = MAPCONTINENTS(/COUNTRIES,  COLOR = 'black', THICK=1) &$
     tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
     tmptr.mapgrid.FONT_SIZE = 0 &$
-cb = colorbar(target=tmptr,ORIENTATION=0,TAPER=1,/BORDER,position=[0.3,0.07,0.7,0.11]) &$
+    
+    tmptr = CONTOUR(CM[*,*,2],FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
+    RGB_TABLE=ct, ASPECT_RATIO=1, Xstyle=1,Ystyle=1,$ ;3x256 array
+    /FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors), $
+    TITLE=month[j],layout=[3,1,2], /CURRENT, /BUFFER)  &$
+    ; TITLE='Jan',/BUFFER)  &$
+    m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot) &$;
+    ; m1 = MAP('Geographic',limit=[map_lry+15,map_ulx+10,map_uly,map_lrx], /overplot) &$;
+    ;mycont = MAPCONTINENTS(shapefile, /COUNTRIES,HIRES=1, thick=2) &$
+    m = MAPCONTINENTS(/COUNTRIES,  COLOR = 'black', THICK=1) &$
+    tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
+    tmptr.mapgrid.FONT_SIZE = 0    
+cb = colorbar(target=tmptr,ORIENTATION=0,TAPER=1,/BORDER) &$
 
 ;i could read in all of the SM percentile or interest
 ;i need a different colorbar here
 ct=colortable(66)
-RGB_INDICES=[0,10,20,50]
+RGB_INDICES=[0,33,50,67]
 index=rgb_indices
-  tmptr = CONTOUR(SM*100,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
+  p2 = CONTOUR(SM*100,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
     RGB_TABLE=ct, min_value=0,ASPECT_RATIO=1, Xstyle=1,Ystyle=1,$ ;3x256 array
     /FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors), $
     TITLE='SM percentile '+month[j],layout=[3,1,3], /CURRENT, /BUFFER)  &$
   m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot) &$;
     m = MAPCONTINENTS(/COUNTRIES,  COLOR = 'black', THICK=1) &$
-    tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
-    tmptr.mapgrid.FONT_SIZE = 0 &$
-cb = colorbar(target=tmptr,ORIENTATION=0,TAPER=1,/BORDER,position=[0.3,0.07,0.7,0.11])
+    p2.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
+    p2.mapgrid.FONT_SIZE = 0 &$
+cb = colorbar(target=p2,ORIENTATION=1,TAPER=1,/BORDER, TEXTPOS=1)
 
 
-tmptr.save,'/home/almcnall/test2.png'
+tmptr.save,'/home/almcnall/test.png'
 close
 
 
