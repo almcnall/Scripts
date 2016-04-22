@@ -29,7 +29,7 @@ ulx = (180.+map_ulx)*10.  & lrx = (180.+map_lrx)*10.-1
 uly = (50.-map_uly)*10.   & lry = (50.-map_lry)*10.-1
 NX = lrx - ulx + 2 
 NY = lry - uly + 2
-
+nsims = 100
 ;;; classify the counts in to the triangles and make an image
 
    p_most = 2./3.		; hi probability for legend division
@@ -49,6 +49,10 @@ NY = lry - uly + 2
 
    ; now read in the data and map it
    ifile = '/home/almcnall/Nov2015_countmap_294_348_3.bin'
+   ifile = '/home/almcnall/Dec2015_countmap_294_348_3.bin'
+   ifile = '/home/almcnall/Jan2015_countmap_294_348_3.bin'
+
+
    openr,1,ifile
    readu,1,ct_cube
    close,1
@@ -78,11 +82,11 @@ NY = lry - uly + 2
    wmap = IMAGE(CONGRID(t_class,2*NX,2*NY), $
              IMAGE_DIMENSIONS=[FLOAT(NX)/10.0,FLOAT(NY)/10.0], IMAGE_LOCATION=[map_ulx,map_lry], $
              DIMENSIONS=[2.5*NX,2.5*NY],AXIS_STYLE=2,GRID_UNITS=2, $
-             RGB_TABLE=[[255,255,255],[t_colors]],/ORDER, $
+             RGB_TABLE=[[255,255,255],[t_colors]],/BUFFER, $
              FONT_SIZE=2)
    map = MAP('Geographic', $
-     ;LIMIT = [map_lry, map_ulx, map_uly, map_lrx], $
-     LIMIT = [-35.0, map_ulx, map_uly, map_lrx], $
+     LIMIT = [map_lry, map_ulx, map_uly, map_lrx], $
+     ;LIMIT = [-35.0, map_ulx, map_uly, map_lrx], $
      /OVERPLOT)
    map.mapgrid.linestyle = 6; 'dotted'
    map.mapgrid.label_show = 0;	turn off labels
@@ -95,5 +99,5 @@ NY = lry - uly + 2
      COLOR = [0, 0, 0], THICK=2, $
      FILL_BACKGROUND = 0)
 
-   wmap.save, '/home/mcnally/test.png'
+   wmap.save, '/home/almcnall/test.png'
 endfor

@@ -36,7 +36,7 @@ uly = (50.-map_uly)*10.   & lry = (50.-map_lry)*10.-1
 NX = lrx - ulx + 2 
 NY = lry - uly + 2
 
-;;not skip to countmaps;;;;;
+;;now skip to countmaps;;;;;
 
 
 ;generate the threshold maps in make_permap.pro
