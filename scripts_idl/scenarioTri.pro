@@ -36,55 +36,68 @@ uly = (50.-map_uly)*10.   & lry = (50.-map_lry)*10.-1
 NX = lrx - ulx + 2 
 NY = lry - uly + 2
 
+;;;read in landcover MODE to grab sparse veg mask;;;
+indir = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/Param_Noah3.3/'
+ifile = file_search(indir+'lis_input.MODISmode_ea.nc')
+VOI = 'LANDCOVER'
+LC = get_nc(VOI, ifile)
+bare = where(LC[*,*,15] eq 1, complement=other)
+water = where(LC[*,*,16] eq 1, complement=other)
+
+mask = fltarr(NX,NY)+1.0
+mask(bare)=!values.f_nan
+mask(water)=!values.f_nan
+
+
 ;;now skip to countmaps;;;;;
 
-
-;generate the threshold maps in make_permap.pro
-;so far only SM01 is available.
-permap = fltarr(nx, ny, 12, 3)
-ifile3 = file_search('/home/almcnall/SM01_permap_294_348_12_3.bin')
-openr, 1, ifile3
-readu, 1, permap
-close,1
-
-delvar, sm, sm01, sm02, qsub, qsuf, var, npix
-
-;ok now i have thresholds for each month - now i just have to count my forecasts.
-;i have the percentile thresholds, now i read in the data...
-;i have saved these for SM, so skip this sometimes.
-indir2 = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/ESPtest/Noah33_CM2_ESPboot_OCT2015JAN2016/ENS/ens???/post/'
-MM=11
-ifile2 = file_search(strcompress(indir2+'FLDAS_NOAH01_C_EA_M.A2015'+string(MM)+'.001_*', /remove_all))
-
-SM01 = fltarr(NX, NY, n_elements(ifile2))
-;so read in each of these files, 
-for i = 0, n_elements(ifile2)-1 do begin &$
-  VOI = 'SoilMoi00_10cm_tavg' &$
-  SM = get_nc(VOI, ifile2[i]) &$
-  SM01[*,*,i] = SM &$
-endfor
-
-;check the value at each pixel? or can i do whole map vs the threshold, count
-help, permap[*,*,MM-1,*]
-
-;first look at the low percentile map
-countmap = fltarr(NX,NY,3)*0
-
-for j = 0, n_elements(SM01[0,0,*])-1 do begin &$
-    
-    ;do I need the where statement? no this should give me a map of ones.
-    dry = SM01[*,*,j] lt permap[*,*,MM-1,0] &$
-    countmap[*,*,0] = countmap[*,*,0] + dry &$
-    
-    ;i shouldn't have to do the between since i can subtract at the end since it should equal 100.
-    ;but how do i do the subtraction? 
-    avg = SM01[*,*,j] lt permap[*,*,MM-1,2] &$
-    countmap[*,*,1] = countmap[*,*,1] + avg &$
-    
-endfor
-countmap[*,*,2] = 100
-countmap[*,*,2] = countmap[*,*,2]-countmap[*,*,1]
-countmap[*,*,1] = countmap[*,*,1]-countmap[*,*,0]
+;
+;;generate the threshold maps in make_permap.pro
+;;so far only SM01 is available.
+;permap = fltarr(nx, ny, 12, 3)
+;ifile3 = file_search('/home/almcnall/SM01_permap_294_348_12_3.bin')
+;openr, 1, ifile3
+;readu, 1, permap
+;close,1
+;
+;delvar, sm, sm01, sm02, qsub, qsuf, var, npix
+;
+;;ok now i have thresholds for each month - now i just have to count my forecasts.
+;;i have the percentile thresholds, now i read in the data...
+;;i have saved these for SM, so skip this sometimes.
+;indir2 = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/ESPtest/Noah33_CM2_ESPboot_OCT2015JAN2016/ENS/ens???/post/'
+;MM=11
+;ifile2 = file_search(strcompress(indir2+'FLDAS_NOAH01_C_EA_M.A2015'+string(MM)+'.001_*', /remove_all))
+;
+;SM01 = fltarr(NX, NY, n_elements(ifile2))
+;;so read in each of these files, 
+;for i = 0, n_elements(ifile2)-1 do begin &$
+;  VOI = 'SoilMoi00_10cm_tavg' &$
+;  SM = get_nc(VOI, ifile2[i]) &$
+;  SM01[*,*,i] = SM &$
+;endfor
+;
+;;check the value at each pixel? or can i do whole map vs the threshold, count
+;;help, permap[*,*,MM-1,*]
+;
+;;;;first look at the low percentile map
+;countmap = fltarr(NX,NY,3)*0
+;
+;for j = 0, n_elements(SM01[0,0,*])-1 do begin &$
+;    
+;    ;do I need the where statement? no this should give me a map of ones.
+;    dry = SM01[*,*,j] lt permap[*,*,MM-1,0] &$
+;    countmap[*,*,0] = countmap[*,*,0] + dry &$
+;    
+;    ;i shouldn't have to do the between since i can subtract at the end since it should equal 100.
+;    ;but how do i do the subtraction? 
+;    avg = SM01[*,*,j] lt permap[*,*,MM-1,2] &$
+;    countmap[*,*,1] = countmap[*,*,1] + avg &$
+;    
+;endfor
+;countmap[*,*,2] = 100
+;countmap[*,*,2] = countmap[*,*,2]-countmap[*,*,1]
+;countmap[*,*,1] = countmap[*,*,1]-countmap[*,*,0]
 
 ;ofile = strcompress('/home/almcnall/2015'+string(MM)+'_countmap_294_348_3.bin',/remove_all)
 ;openw,1,ofile
@@ -92,7 +105,7 @@ countmap[*,*,1] = countmap[*,*,1]-countmap[*,*,0]
 ;close,1
 
 ;what do I need to plot these?
-
+;;;SKIP To HERE;;;;;;
 countmap = fltarr(NX,NY,3)*0
 ;i can also read in Oct2015_countmap_294_348_3.bin start here - tomorrow.
 ifile = file_search('/home/almcnall/Oct2015_countmap_294_348_3.bin')
@@ -125,14 +138,14 @@ help, octCM, novCM, decCM, janCM
 
 ;read in the 'observed' soil moisture percentile for comparison
 ;november looks good...
-MM=01
+MM=12
 indir = '/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_EA/post/'
-ifile = file_search(indir+'FLDAS_NOAH01_C_EA_M.A201512.001.nc')
+ifile = file_search(indir+'FLDAS_NOAH01_C_EA_M.A201601.001.nc') ;it'd be better to be dynamic
 VOI = 'SM01_Percentile'
 SM = get_nc(VOI, ifile)
 ;for now just make 3 plots -likelihood of dry, wet, avg. Whats the handle that lets
 ;you set plot params without repeating? see CCI paper plots
-CM=decCM
+CM=novCM
 
 ;p1 = image(CM[*,*,0], rgb_table=51, title = 'nov dry count', /buffer, layout=[4,1,1])
 ;p2 = image(CM[*,*,1], rgb_table=51, title = 'nov avg count', /buffer, layout=[4,1,2], /current)
@@ -144,6 +157,7 @@ CM=decCM
 ;p1.save, '/home/almcnall/test.png'
 
 ;;;;;;what do i want this plot to look like?;;;;;;;;
+;;purple triple plots;;;
 month = ['oct', 'nov', 'dec', 'jan']
   ncolors = 6
   RGB_INDICES=[ 10, 20, 30, 35, 45, 55] ;..these values are nothing like what i had before..
@@ -151,7 +165,7 @@ month = ['oct', 'nov', 'dec', 'jan']
   ct=colortable(51)
 ;for i = 0,11 do begin &$
 i = 0 ; dry, wet, percentile
-j = 2 ; month
+j = 3 ; month
 print, i &$
   tmptr = CONTOUR(CM[*,*,0],FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
     RGB_TABLE=ct, ASPECT_RATIO=1, Xstyle=1,Ystyle=1,$ ;3x256 array
@@ -183,10 +197,10 @@ cb = colorbar(target=tmptr,ORIENTATION=0,TAPER=1,/BORDER) &$
 ct=colortable(66)
 RGB_INDICES=[0,33,50,67]
 index=rgb_indices
-  p2 = CONTOUR(SM*100,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
+  p2 = CONTOUR(SM*mask*100,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
     RGB_TABLE=ct, min_value=0,ASPECT_RATIO=1, Xstyle=1,Ystyle=1,$ ;3x256 array
     /FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors), $
-    TITLE='SM percentile '+month[j],layout=[3,1,3], /CURRENT, /BUFFER)  &$
+    TITLE='SM percentile '+month[j],layout=[1,1,1], /CURRENT, /BUFFER)  &$
   m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot) &$;
     m = MAPCONTINENTS(/COUNTRIES,  COLOR = 'black', THICK=1) &$
     p2.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
@@ -194,7 +208,7 @@ index=rgb_indices
 cb = colorbar(target=p2,ORIENTATION=1,TAPER=1,/BORDER, TEXTPOS=1)
 
 
-tmptr.save,'/home/almcnall/test.png'
+p2.save,'/home/almcnall/test.png'
 close
 
 

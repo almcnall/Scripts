@@ -30,6 +30,24 @@ uly = (50.-map_uly)*10.   & lry = (50.-map_lry)*10.-1
 NX = lrx - ulx + 2 
 NY = lry - uly + 2
 nsims = 100
+
+;;east africa bare soil/water mask;;
+
+;;;read in landcover MODE to grab sparse veg mask;;;
+.compile /home/almcnall/Scripts/scripts_idl/get_nc.pro
+indir = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/Param_Noah3.3/'
+ifile = file_search(indir+'lis_input.MODISmode_ea.nc')
+VOI = 'LANDCOVER'
+LC = get_nc(VOI, ifile)
+bare = where(LC[*,*,15] eq 1, complement=other)
+water = where(LC[*,*,16] eq 1, complement=other)
+
+mask = BYTARR(NX,NY)+1
+mask(bare) = 0
+mask(water) = 0
+
+mask3 = rebin(mask,nx,ny,3)
+
 ;;; classify the counts in to the triangles and make an image
 
    p_most = 2./3.		; hi probability for legend division
@@ -56,7 +74,7 @@ nsims = 100
    openr,1,ifile
    readu,1,ct_cube
    close,1
-
+   ct_cube = ct_cube*mask3
    t_class = BYTARR(NX,NY)
    
    ; set the triangle for each class
@@ -99,5 +117,5 @@ nsims = 100
      COLOR = [0, 0, 0], THICK=2, $
      FILL_BACKGROUND = 0)
 
-   wmap.save, '/home/almcnall/test.png'
+   wmap.save, '/home/almcnall/DecESP.png'
 endfor

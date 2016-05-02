@@ -82,27 +82,51 @@ for i=0,5 do $
            THICK=3,COLOR='gray')
 
 axis_lab = ['Least Likely','Somewhat Likely','Most Likely']
-; label the normal axis
+
+;;AMY'S Soil moisture percentiles;;;;;
 w = WINDOW(WINDOW_TITLE='Test Tri',DIMENSIONS = [600,600],MARGIN=0.1)
 for i=0,8 do !null = POLYGON(lilx[*,i]*t_scl+x_off,lily[*,i]*t_scl+y_off, $
-                     FILL_COLOR=t_colors[*,i],THICK=3,COLOR='gray')
+  FILL_COLOR=t_colors[*,i],THICK=3,COLOR='gray')
 for i=0,5 do $
-   !null = POLYLINE(hashx[*,i]*t_scl+x_off,hashy[*,i]*t_scl+y_off, $
-           THICK=3,COLOR='gray')
+  !null = POLYLINE(hashx[*,i]*t_scl+x_off,hashy[*,i]*t_scl+y_off, $
+  THICK=3,COLOR='gray')
 
-   n_lab = TEXT(([0.,1.,2.]/6. + (0.8/12.))*t_scl+x_off,([hiy/6.,hiy/2.,5.*hiy/6.])*t_scl+y_off, $
-                axis_lab,BASELINE=[0.5,hiy,0.0],COLOR='gray', ALIGNMENT=0.5, FONT_SIZE=FIX(20.*t_scl)) 
-   a_lab = TEXT(([0.,1.,2.]/6. + (7.2/12.))*t_scl+x_off,([5.*hiy/6.,hiy/2.,hiy/6.])*t_scl+y_off, $
-               axis_lab,BASELINE=[0.5,-1*hiy,0.0],COLOR=[25,106,154], ALIGNMENT=0.5, FONT_SIZE=FIX(20.*t_scl)) 
-   b_lab = TEXT(([2.,1.,0.]/3. + (1./6.))*t_scl+x_off,([-0.04,-0.04,-0.04])*t_scl+y_off, $
-                axis_lab,COLOR=[221,17,86], ALIGNMENT=0.5, FONT_SIZE=FIX(20.*t_scl)) 
-   n_title = TEXT((1./6.)*t_scl+x_off,(hiy/2.)*t_scl+y_off,'NORMAL: 85% < Rain < 115%', $
-                  BASELINE=[0.5,hiy,0.0],COLOR='gray', ALIGNMENT=0.5, FONT_SIZE=FIX(25.*t_scl))
-   a_title = TEXT((5./6.)*t_scl+x_off,(hiy/2.)*t_scl+y_off,'WET: Rain > 115%', $
-                  BASELINE=[0.5,-1*hiy,0.0],COLOR=[25,106,154], ALIGNMENT=0.5, FONT_SIZE=FIX(25.*t_scl))
-   b_title = TEXT((1./2.)*t_scl+x_off,(-0.1)*t_scl+y_off,'DRY: Rain < 85%', $
-                  COLOR=[221,17,86], ALIGNMENT=0.5, FONT_SIZE=FIX(25.*t_scl))
-   t_labels = TEXT([1./2.,1./6.,5./6.]*t_scl+x_off,([yrows[1],yrows[3],yrows[3]]+hiy/9.)*t_scl+y_off, $
-                   ['NORMAL','DRY','WET'], VERTICAL_ALIGNMENT=0.8,ALIGNMENT=0.5,FONT_SIZE=FIX(25.*t_scl))
+n_lab = TEXT(([0.,1.,2.]/6. + (0.8/12.))*t_scl+x_off,([hiy/6.,hiy/2.,5.*hiy/6.])*t_scl+y_off, $
+  axis_lab,BASELINE=[0.5,hiy,0.0],COLOR='gray', ALIGNMENT=0.5, FONT_SIZE=FIX(20.*t_scl))
+a_lab = TEXT(([0.,1.,2.]/6. + (7.2/12.))*t_scl+x_off,([5.*hiy/6.,hiy/2.,hiy/6.])*t_scl+y_off, $
+  axis_lab,BASELINE=[0.5,-1*hiy,0.0],COLOR=[25,106,154], ALIGNMENT=0.5, FONT_SIZE=FIX(20.*t_scl))
+b_lab = TEXT(([2.,1.,0.]/3. + (1./6.))*t_scl+x_off,([-0.04,-0.04,-0.04])*t_scl+y_off, $
+  axis_lab,COLOR=[221,17,86], ALIGNMENT=0.5, FONT_SIZE=FIX(20.*t_scl))
+n_title = TEXT((1./6.)*t_scl+x_off,(hiy/2.)*t_scl+y_off,'NORMAL: 33 %ile < SM < 67 %ile', $
+  BASELINE=[0.5,hiy,0.0],COLOR='gray', ALIGNMENT=0.5, FONT_SIZE=FIX(25.*t_scl))
+a_title = TEXT((5./6.)*t_scl+x_off,(hiy/2.)*t_scl+y_off,'WET: SM > 67 %ile', $
+  BASELINE=[0.5,-1*hiy,0.0],COLOR=[25,106,154], ALIGNMENT=0.5, FONT_SIZE=FIX(25.*t_scl))
+b_title = TEXT((1./2.)*t_scl+x_off,(-0.1)*t_scl+y_off,'DRY: SM < 33 %ile', $
+  COLOR=[221,17,86], ALIGNMENT=0.5, FONT_SIZE=FIX(25.*t_scl))
+t_labels = TEXT([1./2.,1./6.,5./6.]*t_scl+x_off,([yrows[1],yrows[3],yrows[3]]+hiy/9.)*t_scl+y_off, $
+  ['NORMAL','DRY','WET'], VERTICAL_ALIGNMENT=0.8,ALIGNMENT=0.5,FONT_SIZE=FIX(25.*t_scl))
+
+; GREG'S RAINFALL ANALYSIS label the normal axis
+;w = WINDOW(WINDOW_TITLE='Test Tri',DIMENSIONS = [600,600],MARGIN=0.1)
+;for i=0,8 do !null = POLYGON(lilx[*,i]*t_scl+x_off,lily[*,i]*t_scl+y_off, $
+;                     FILL_COLOR=t_colors[*,i],THICK=3,COLOR='gray')
+;for i=0,5 do $
+;   !null = POLYLINE(hashx[*,i]*t_scl+x_off,hashy[*,i]*t_scl+y_off, $
+;           THICK=3,COLOR='gray')
+;
+;   n_lab = TEXT(([0.,1.,2.]/6. + (0.8/12.))*t_scl+x_off,([hiy/6.,hiy/2.,5.*hiy/6.])*t_scl+y_off, $
+;                axis_lab,BASELINE=[0.5,hiy,0.0],COLOR='gray', ALIGNMENT=0.5, FONT_SIZE=FIX(20.*t_scl)) 
+;   a_lab = TEXT(([0.,1.,2.]/6. + (7.2/12.))*t_scl+x_off,([5.*hiy/6.,hiy/2.,hiy/6.])*t_scl+y_off, $
+;               axis_lab,BASELINE=[0.5,-1*hiy,0.0],COLOR=[25,106,154], ALIGNMENT=0.5, FONT_SIZE=FIX(20.*t_scl)) 
+;   b_lab = TEXT(([2.,1.,0.]/3. + (1./6.))*t_scl+x_off,([-0.04,-0.04,-0.04])*t_scl+y_off, $
+;                axis_lab,COLOR=[221,17,86], ALIGNMENT=0.5, FONT_SIZE=FIX(20.*t_scl)) 
+;   n_title = TEXT((1./6.)*t_scl+x_off,(hiy/2.)*t_scl+y_off,'NORMAL: 85% < Rain < 115%', $
+;                  BASELINE=[0.5,hiy,0.0],COLOR='gray', ALIGNMENT=0.5, FONT_SIZE=FIX(25.*t_scl))
+;   a_title = TEXT((5./6.)*t_scl+x_off,(hiy/2.)*t_scl+y_off,'WET: Rain > 115%', $
+;                  BASELINE=[0.5,-1*hiy,0.0],COLOR=[25,106,154], ALIGNMENT=0.5, FONT_SIZE=FIX(25.*t_scl))
+;   b_title = TEXT((1./2.)*t_scl+x_off,(-0.1)*t_scl+y_off,'DRY: Rain < 85%', $
+;                  COLOR=[221,17,86], ALIGNMENT=0.5, FONT_SIZE=FIX(25.*t_scl))
+;   t_labels = TEXT([1./2.,1./6.,5./6.]*t_scl+x_off,([yrows[1],yrows[3],yrows[3]]+hiy/9.)*t_scl+y_off, $
+;                   ['NORMAL','DRY','WET'], VERTICAL_ALIGNMENT=0.8,ALIGNMENT=0.5,FONT_SIZE=FIX(25.*t_scl))
 
 
