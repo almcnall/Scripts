@@ -2,7 +2,9 @@ pro FLDAS_EVAL_LVT
 
 ;this script makes plots of the LIS-WRSI (CHIRPS) similar to what is found on the USGS website
 ;calls the function get_nc for reading in the netcdf files more cleanly.
-;3/3/2015 update mv to discover
+;3/3/2016 update mv to discover
+;5/2/2016 add mask and some other stuff to plots.
+;5/5/2016 continuing mask effort after LDT issues.
 
 ;indir = '/home/sandbox/people/mcnally/FLDAS_EVAL/'
 indir = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/LVT_test/'
@@ -18,41 +20,41 @@ VOI = 'SoilMoist_v_SoilMoist' ;variable of interest 'SoilMoist_v_Rainf', SoilMoi
 ;ifile = file_search(indir+'LVT_ACORR_CCISM_NOAHSM01_CHIRPSGDAS_2001_2013_EA.nc') & print, ifile ;this needs to be re-done
 
 ;ifile = file_search(indir+'ESACCI/STATS_EA_CM2_v2.2_92_14/LVT_ACORR_FINAL.201501010000.d01.nc') & print, ifile
-;ifile = file_search(indir+'ESACCI/STATS_SA_CM2_v2.2_92_14/LVT_ACORR_FINAL.201501010000.d01.nc') & print, ifile
-ifile = file_search(indir+'ESACCI/STATS_WA_CM2_v2.2_92_14/LVT_ACORR_FINAL.201501010000.d01.nc') & print, ifile
+ifile = file_search(indir+'ESACCI/STATS_SA_CM2_v2.2_92_14/LVT_ACORR_FINAL.201501010000.d01.nc') & print, ifile
+;ifile = file_search(indir+'ESACCI/STATS_WA_CM2_v2.2_92_14/LVT_ACORR_FINAL.201501010000.d01.nc') & print, ifile
 ;ifile = file_search(indir+'LVT_ACORR_FINAL.201401010000.d01_CM_FIX_EA_2001.nc') & print, ifile
 ACORR_fix = get_nc(VOI, ifile)
 ACORR_fix(where(ACORR_fix lt -10))=!values.f_nan
 
-;ifile = file_search(indir+'LVT_ACORR_FINAL.201401010000.d01_CM_OLD_EA_2001.nc') & print, ifile
-ACORR_old = get_nc(VOI, ifile)
-ACORR_old(where(ACORR_old lt -10))=!values.f_nan
+;;;unoccment fro OLD CCI & lagged-NDVI
+;;ifile = file_search(indir+'LVT_ACORR_FINAL.201401010000.d01_CM_OLD_EA_2001.nc') & print, ifile
+;ACORR_old = get_nc(VOI, ifile)
+;ACORR_old(where(ACORR_old lt -10))=!values.f_nan
+;
+;ifile = file_search(indir+'LVT_ACORR_CCISM_NOAHSM01_RFEGDAS_2001_2014_EA.nc') & print, ifile
+;;ifile = file_search(indir+'LVT_ACORR_CCISM_NOAHSM01_RFEGDAS_2001_2014_WA.nc') & print, ifile
+;;ifile = file_search(indir+'LVT_ACORR_CCISM_NOAHSM01_RFEGDAS_2001_2014_SA.nc')
+;ACORR_RG = get_nc(VOI, ifile)
+;ACORR_RG(where(ACORR_RG lt -10))=!values.f_nan
+;
+;VOI = 'SoilMoist_v_NDVI'
+;;ifile = file_search(indir+'LVT_RCORR_NDVI_NOAHSM01_CHIRPSGDAS_2001_2013_EA.nc') & print, ifile ;this needs to be re-done
+;;ifile = file_search(indir+'LVT_RCORR_NDVI_NOAHSM01_RFEGDAS_2001_2013_EA.nc') & print, ifile ;LVT_RCORR_NDVI_NOAHSM01_CHIRPSGDAS_2001_2013_EA.nc
+;;ifile = file_search(indir+'LVT_RCORR_NDVI_NOAHSM01_RFEGDAS_2001_2013_WA.nc') & print, ifile
+;;ifile = file_search(indir+'LVT_RCORR_NDVI_NOAHSM01_RFEGDAS_2001_2013_SA.nc')
+;RCORR_RG = get_nc(VOI, ifile)
+;RCORR_RG(where(RCORR_RG lt -10))=!values.f_nan
+;
+;;;;;;all these need to be redone with the correlations from 2001 rather than 1992
+;ifile = file_search(indir+'GIMMS/STATS_SA_CMfix_2001/LVT_RCORR_FINAL.201401010000.d01.nc') & print, ifile ;this needs to re-do from
+;;ifile = file_search(indir+'LVT_RCORR_NDVI_NoahSM01fix_1992_2013_EA.nc') & print, ifile ;this needs to re-do from
+;RCORR_CMfix = get_nc(VOI, ifile)
+;RCORR_CMfix(where(RCORR_CMfix lt -10))=!values.f_nan
+;
+;ifile = file_search(indir+'old/LVT_RCORR_NDVI_NoahSM01_1992_2013_EA.nc') & print, ifile ;this needs to re-do from 2001 if comparing..
+;RCORR_CMold = get_nc(VOI, ifile)
+;RCORR_CMold(where(RCORR_CMold lt -10))=!values.f_nan
 
-ifile = file_search(indir+'LVT_ACORR_CCISM_NOAHSM01_RFEGDAS_2001_2014_EA.nc') & print, ifile
-;ifile = file_search(indir+'LVT_ACORR_CCISM_NOAHSM01_RFEGDAS_2001_2014_WA.nc') & print, ifile
-;ifile = file_search(indir+'LVT_ACORR_CCISM_NOAHSM01_RFEGDAS_2001_2014_SA.nc')
-ACORR_RG = get_nc(VOI, ifile)
-ACORR_RG(where(ACORR_RG lt -10))=!values.f_nan
-
-VOI = 'SoilMoist_v_NDVI'
-;ifile = file_search(indir+'LVT_RCORR_NDVI_NOAHSM01_CHIRPSGDAS_2001_2013_EA.nc') & print, ifile ;this needs to be re-done
-;ifile = file_search(indir+'LVT_RCORR_NDVI_NOAHSM01_RFEGDAS_2001_2013_EA.nc') & print, ifile ;LVT_RCORR_NDVI_NOAHSM01_CHIRPSGDAS_2001_2013_EA.nc
-;ifile = file_search(indir+'LVT_RCORR_NDVI_NOAHSM01_RFEGDAS_2001_2013_WA.nc') & print, ifile
-;ifile = file_search(indir+'LVT_RCORR_NDVI_NOAHSM01_RFEGDAS_2001_2013_SA.nc')
-RCORR_RG = get_nc(VOI, ifile)
-RCORR_RG(where(RCORR_RG lt -10))=!values.f_nan
-
-;;;;;all these need to be redone with the correlations from 2001 rather than 1992
-ifile = file_search(indir+'GIMMS/STATS_SA_CMfix_2001/LVT_RCORR_FINAL.201401010000.d01.nc') & print, ifile ;this needs to re-do from
-;ifile = file_search(indir+'LVT_RCORR_NDVI_NoahSM01fix_1992_2013_EA.nc') & print, ifile ;this needs to re-do from
-RCORR_CMfix = get_nc(VOI, ifile)
-RCORR_CMfix(where(RCORR_CMfix lt -10))=!values.f_nan
-
-ifile = file_search(indir+'old/LVT_RCORR_NDVI_NoahSM01_1992_2013_EA.nc') & print, ifile ;this needs to re-do from 2001 if comparing..
-RCORR_CMold = get_nc(VOI, ifile)
-RCORR_CMold(where(RCORR_CMold lt -10))=!values.f_nan
-
-;both NDVI and MW soil moisture highlight errors in rainfall.
 
 ;other variations (changes in time period etc have to be re-done since the Sept/Oct fix)
 ;ifile = file_search(indir+'LVT_ACORR_CCISM_NoahSM01_1992_2013_SA.nc');
@@ -60,17 +62,17 @@ RCORR_CMold(where(RCORR_CMold lt -10))=!values.f_nan
 ;ifile = file_search(indir+'LVT_RCORR_NDVI_NoahSM01_1992_2013_SA.nc')
 ;
 ;nx = 486, ny = 443, nz = 33
-dims = size(ACORR_RG, /dimensions)
+dims = size(ACORR_fix, /dimensions)
 NX = dims[0]
 NY = dims[1]
 
 ;South africa domain
-;map_ulx = 6.05 & map_lrx = 54.55
-;map_uly = 6.35 & map_lry = -37.85
+map_ulx = 6.05 & map_lrx = 54.55
+map_uly = 6.35 & map_lry = -37.85
 
 ; west africa domain
-map_ulx = -18.65 & map_lrx = 25.85
-map_uly = 17.65 & map_lry = 5.35
+;map_ulx = -18.65 & map_lrx = 25.85
+;map_uly = 17.65 & map_lry = 5.35
 
 ; East africa domain
 ;map_ulx = 22.05 & map_lrx = 51.35
@@ -82,10 +84,35 @@ uly = (50.-map_uly)*10. & lry = (50.-map_lry)*10.-1
 NX = lrx - ulx + 2 ;not sure why i have to add 2...
 NY = lry - uly + 2
 
+;add the bare ground/sparse veg mask
+
+;;;read in landcover MODE to grab sparse veg mask;;;
+;;;;west africa;;;;;;;
+;indir = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/wrsi_inputs/'
+;ifile = file_search(indir+'lis_input_wrsi.wa.mode.nc')
+;VOI = 'SURFACETYPE'
+;LC = get_nc(VOI, ifile)
+;bare = where(LC[*,*,11] eq 1, complement=other)
+;water = where(LC[*,*,13] eq 1, complement=other)
+
+;;;;eastern africa;;;;;;
+indir = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/Param_Noah3.3/'
+;ifile = file_search(indir+'lis_input.MODISmode_ea.nc')
+ifile = file_search(indir+'lis_input_sa_elev_mode.nc')
+
+VOI = 'LANDCOVER'
+LC = get_nc(VOI, ifile)
+bare = where(LC[*,*,15] eq 1, complement=other)
+water = where(LC[*,*,16] eq 1, complement=other)
+
+mask = fltarr(NX,NY)+1.0
+mask(bare)=!values.f_nan
+mask(water)=!values.f_nan
+
 ;change this to a contour plot.
 ncolors = 6
 index = [-1,0.4,0.5,0.6,0.7,0.8]
-tmptr = CONTOUR(ACORR_fix,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
+tmptr = CONTOUR(ACORR_fix*mask,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
   ASPECT_RATIO=1, Xstyle=1,Ystyle=1, $
   RGB_TABLE=64,/FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors), $
   TITLE='ANOM CORR MW (1992-2015)', /BUFFER)  &$
