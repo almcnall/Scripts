@@ -7,6 +7,7 @@ pro yemen_ET_compare
 ;9/27 revisiting for October ICBA meeting, this was kinda messy....
 ;9/30 add rainfall to this code 
 ;4/9/15 can i transform this code to be the reader for the new ET data that i got from Gabriel.
+;5/6/16 revisit to get clipping SSEB ideas
 
 ;******************read in monthly ET data (RPAW, MW, LIS)********************************
 ;I think I have yemen in the window, given the resolution, might just grab a time series over the mts?

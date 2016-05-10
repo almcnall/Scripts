@@ -1,19 +1,17 @@
 ;this script is to calculate the aquestat indices
 ; 1/10/16 using this as a start to the SSEB compare (again)
 ; 3/18/16 revisit for MERRA2 comparisons
-; compute MEDIAN 2003-2013 OCT-DEC
-; then compute 
-; can i do this quantitativly with the SSEB data here or in LVT?
+; 5/9/16 revist for masking and Equitable Threat Scores
 
 ;.compile /home/source/mcnally/scripts_idl/get_nc.pro
 .compile /home/almcnall/Scripts/scripts_idl/get_nc.pro
 
 startyr = 2003 ;start with 1982 since no data in 1981
-endyr = 2015
+endyr = 2016
 nyrs = endyr-startyr+1
 
 ;East Africa May-Sept, Aug-Dec, West Africa June-October
-startmo = 8
+startmo = 1
 endmo = 12
 nmos = endmo - startmo+1
 
@@ -26,33 +24,27 @@ nmos = endmo - startmo+1
 map_ulx = 22.  & map_lrx = 51.35
 map_uly = 22.95  & map_lry = -11.75
 
-;and for VIC...
-; East africa domain
-;map_ulx = 21.875 & map_lrx = 51.125
-;map_uly = 23.125 & map_lry = -11.875
-
-
 ;Southern Africa WRSI/Noah window
 ;Southern Africa (37.85 S - 6.35 N; 6.05 E - 54.55 E) 
 ;NX = 486, NY = 443
 ;map_ulx = 6.05  & map_lrx = 54.55
 ;map_uly = 6.35  & map_lry = -37.85
-res = 10. ;or 10. if its 0.1 degree
+
+;;;; VIC East africa domain ;;;;;
+;map_ulx = 21.875 & map_lrx = 51.125
+;map_uly = 23.125 & map_lry = -11.875
+
+res = 10. ;or 10. if its 0.1 degree, 4 or for 0.25 VIC
 
 ulx = (180.+map_ulx)*res  & lrx = (180.+map_lrx)*res-1
 uly = (50.-map_uly)*res   & lry = (50.-map_lry)*res-1
 NX = lrx - ulx + 2 
 NY = lry - uly + 2
 
+;;;read in monthly data to compare to monthly SSEB;;;;;;
 data_dir = '/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_EA/post/'
-;data_dir = '/home/ftp_out/people/mcnally/FLDAS/FLDAS4DISC/NOAH_CHIRPSv2.001_MERRA_SA/';FLDAS_NOAH01_B_SA_M.A201507.001.nc
-;data_dir = '/home/ftp_out/people/mcnally/FLDAS/FLDAS4DISC/NOAH_CHIRPSv2.001_MERRA_WA/';FLDAS_NOAH01_B_SA_M.A201507.001.nc
-;data_dir = '/home/ftp_out/people/mcnally/FLDAS/FLDAS4DISC/NOAH_CHIRPSv2.001_MERRA_EA/';FLDAS_NOAH01_B_SA_M.A201507.001.nc
-;data_dir = '/home/ftp_out/people/mcnally/FLDAS/FLDAS4DISC/VIC_CHIRPSv2.001_MERRA_EA/';FLDAS_NOAH01_B_SA_M.A201507.001.nc
 
 Evap = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
-
-
 ;this loop reads in the selected months only
 for yr=startyr,endyr do begin &$
   for i=0,nmos-1 do begin &$
@@ -63,93 +55,81 @@ for yr=startyr,endyr do begin &$
     y = y+1 &$
   endif &$
   ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_C_EA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
-  ;ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_VIC025_B_EA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
-
-  ;ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_B_WA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
-  ;ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_B_SA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
   ;ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_A_SA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
-  ;does this somehow not work?
-  VOI = 'Evap_tavg' &$ ;variable of interest 'SoilMoist_v_Rainf', SoilMoist_v_NDVI
+  
+  ;variable of interest
+  VOI = 'Evap_tavg' &$ 
   Qs = get_nc(VOI, ifile) &$
   print, ifile, VOI &$
   Evap[*,*,i,yr-startyr] = Qs &$
       
   endfor &$ 
 endfor
+;is there a reason why this is zero and not nan?
 Evap(where(Evap lt 0)) = 0
 
-
 Evapmm = Evap*86400*30
-
-
-;I'd like a water mask and a landmask, which combo will do this?
-;do i need the mask? if so i'll have to grad 0.25 vic ones too
-;landmask will give water bodies+ocean, WHC will give land v ocean.
-;ifile = file_search('/home/sandbox/people/mcnally/LIS_NETCDF_INPUT/lis_input_ea_elev.nc');lis_input_wrsi.ea_oct2feb.nc
-;ifile = file_search('/home/sandbox/people/mcnally/LIS_NETCDF_INPUT/lis_input_wrsi.ea_oct2feb.nc');lis_input_wrsi.sa.nc
-ifile = file_search('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/lis_input_wrsi.ea_oct2feb.nc')
-;ifile = file_search('/home/sandbox/people/mcnally/LIS_NETCDF_INPUT/lis_input_wrsi.sa.nc');lis_input_wrsi.wa.mode.nc
-;ifile = file_search('/home/sandbox/people/mcnally/LIS_NETCDF_INPUT/lis_input_wrsi.wa.mode.nc')
-;ifile = file_search('/home/sandbox/people/mcnally/LIS_NETCDF_INPUT/lis_input_wa_elev.nc')
-
-fileID = ncdf_open(ifile)
-;qsID = ncdf_varid(fileID,'WRSIMASK'); WHC
-qsID = ncdf_varid(fileID,'LANDMASK'); this does water bodies
-ncdf_varget,fileID, qsID, landmask
-landmask(where(landmask gt 0))=1
-landmask(where(landmask eq 0))=!values.f_nan
-
-;qsID = ncdf_varid(fileID,'WHC'); this does ocean
-;ncdf_varget,fileID, qsID, whc
-;NCDF_close, fileID
-;
-;whc(where(whc gt 0))=1
-;whc(where(whc eq 0))=!values.f_nan
-
-;temp =image(landmask, min_value=0, layout=[2,1,1])
-;temp =image(whc, min_value=0, layout=[2,1,2], /current)
-
 ;how much runoff is there every month?
 help, Evapmm
-ONDEvap = mean(Evapmm,dimension=3,/nan)
+;ONDEvap = mean(Evapmm,dimension=3,/nan)
 
-;take the median for 2003-2013 (10yrs)
-medEVAP = MEDIAN(ONDEvap[*,*,0:9], dimension=3)
-medEVAPcube = REBIN(medEVAP,NX, NY, NYRS)
+;take the median for 2003-2013 (10yrs) for each month
+;for monthly (not seasonal) analysis
+medEVAP = MEDIAN(Evapmm[*,*,*,0:9], dimension=4) & help, medEVAP
+medEVAPcube = REBIN(medEVAP,294, 348, 12, NYRS)
 
 ;then compute percent of this median for all yrs...
-PON = (ONDevap/MEDevapCUBE)*100
+;PON = (ONDevap/MEDevapCUBE)*100
+PON = (Evapmm/MEDevapCUBE)*100
+PON(where(PON gt 250)) = 250
 
 month = ['jan', 'feb', 'mar','apr','may','jun','jul','aug','sep','oct','nov','dec']
 
 ;only use this shapefile when necessary so slow.
 ;shapefile = '/home/code/idl_user_contrib/GAUL_2013_2012_0.shapefiles/G2013_2012_0.shp'
 
-;yemen zoon
-YemPON = PON[200:NX-1,200:NY-1,*] & help, YemPON
-dims = size(YemPON, /dimension)
-yNX = dims[0]
-yNY = dims[1]
+;;read in mask - landcover, WRSI, VIC, NOAH?;;;;;
+;ifile = file_search('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/lis_input_wrsi.ea_oct2feb.nc')
+;fileID = ncdf_open(ifile)
+;qsID = ncdf_varid(fileID,'WRSIMASK'); WHC
+
+indir = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/Param_Noah3.3/'
+ifile = file_search(indir+'lis_input.MODISmode_ea.nc')
+;ifile = file_search(indir+'lis_input_sa_elev_mode.nc')
+
+VOI = 'LANDCOVER'
+LC = get_nc(VOI, ifile)
+bare = where(LC[*,*,15] eq 1, complement=other)
+water = where(LC[*,*,16] eq 1, complement=other)
+
+mask = fltarr(NX,NY)+1.0
+mask(bare)=!values.f_nan
+mask(water)=!values.f_nan
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;yemen zoom
+;YemPON = PON[200:NX-1,200:NY-1,*] & help, YemPON
+;dims = size(YemPON, /dimension)
+;yNX = dims[0]
+;yNY = dims[1]
 
 ;use 3x5 for west africa but 5x3 for east and south
 ncolors = 7
 ;RGB_INDICES=[0,50,70,90,110,130,150]
-index = [0,50,70,90,110,130,150];[0,20,60,100,140];  C_VALUE=index,,max_value=200,min_value=0, 
-;tmptr = CONTOUR(ETHcmpp[*,*,i]*EthPOP,FINDGEN(eNX)/10.+map_ulx+10, FINDGEN(eNY)/10.+map_lry+15, $ ;
-
+index = [0,50,70,90,110,130,150];
 ;w = WINDOW(DIMENSIONS=[700,900])
 ct=colortable(73)
 for i = 0,12 do begin &$
   ;tmptr = CONTOUR(PON[*,*,i]*landmask,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ 
   ;tmptr = CONTOUR(yemPON[*,*,i],FINDGEN(yNX)/10.+map_ulx+20, FINDGEN(yNY)/10.+map_lry+20, $
-    tmptr = CONTOUR(PON[*,*,i],FINDGEN(NX)/res+map_ulx, FINDGEN(NY)/res+map_lry, $
+    tmptr = CONTOUR(PON[*,*,0,i]*mask,FINDGEN(NX)/res+map_ulx, FINDGEN(NY)/res+map_lry, $
     RGB_TABLE=ct, ASPECT_RATIO=1, Xstyle=1,Ystyle=1,$
     ;/FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors), /CURRENT, layout=[5,3,i+1]) &$
     /FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors),/BUFFER) &$
 
   ct[108:108+36,*] = 200  &$
   tmptr.rgb_table=ct  &$
- tmptr.title = 'May-Oct '+ string(2003+i)  &$
+ tmptr.title = 'Aug-Dec '+ string(2003+i)  &$
  ; m1 = MAP('Geographic',limit=[map_lry+20,map_ulx+20,map_uly,map_lrx], /overplot) &$;
   m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot) &$;
 
@@ -161,9 +141,191 @@ for i = 0,12 do begin &$
 
 endfor
 cb = colorbar(target=tmptr,ORIENTATION=0,TAPER=1,/BORDER, TITLE='ETa anomaly %', position=[0.3,0.04,0.7,0.07]) 
- 
+ tmptr.save,'/home/almcnall/test.png'
    
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;try reading in the SSEB data for east africa
+;;first read one in to get the domain info for upper left x and y.
+indir = '/discover/nobackup/projects/fame/Validation/SSEB/ETA_AFRICA/'
+ifile = file_search(strcompress(indir+'/ma0401.modisSSEBopET.tif',/remove_all))
+ingrid = read_tiff(ifile, geotiff=gtag)
+;ingrid = reverse(ingrid,2)
+
+smap_ulx = gtag.MODELTIEPOINTTAG[3]
+smap_lrx = 54.75 ;
+smap_uly = gtag.MODELTIEPOINTTAG[4]
+smap_lry = -37.75 
+
+ulx = (180.+smap_ulx)/0.0083  & lrx = (180.+smap_lrx)/0.0083
+uly = (50.-smap_uly)/0.0083    & lry = (50.-smap_lry)/0.0083
+NX = lrx - ulx -1
+NY = lry - uly
+print, nx, ny
+help, ingrid
+
+;;;;;;;East Africa WRSI/Noah window
+map_ulx = 22.  & map_lrx = 51.35
+map_uly = 22.95  & map_lry = -11.75
+;;;;;;;clip continental africa to east africa domain;;;;;;
+ea_left = (map_ulx-smap_ulx)/0.0083 & print, ea_left
+ea_right = (map_lrx-smap_ulx)/0.0083 & print, ea_right
+ea_bot = abs(smap_lry-map_lry)/0.0083 & print, ea_bot
+ea_top = (map_uly-smap_lry)/0.0083 & print, ea_top
+
+;temp = image(ingrid[ea_left:ea_right,ea_bot:ea_top])
+
+startyr = 2003
+endyr = 2016
+help, ingrid[ea_left:ea_right,ea_bot:ea_top]
+
+;ETA = bytarr(3537,4182,12,(endyr-startyr)+1)
+ETA = bytarr(294,348,12,(endyr-startyr)+1)
+
+indir = '/discover/nobackup/projects/fame/Validation/SSEB/ETA_AFRICA/'
+;TIC
+;;;read in the 0.1x0.1 degree file instead
+;for y = startyr,endyr do begin &$
+;  for m = 1,12 do begin &$
+;  yy = strmid(string(y),6,2) &$
+;  ifile = file_search(strcompress(indir+'/ma'+yy+STRING(format='(I2.2)', m)+'.modisSSEBopET.tif',/remove_all)) &$
+;  ingrid = read_tiff(ifile, geotiff=gtag) &$
+;  ingrid = reverse(ingrid,2) &$
+;  ETA[*,*,m-1,y-startyr] = congrid(ingrid[ea_left:ea_right,ea_bot:ea_top],294,348) &$
+;endfor &$
+;endfor
+;TOC
+
+;write out file since it takes 3 min to generate.
+;ofile = indir+'ETA_EA_3537_4182_12_14_byte.bin'
+;openw,1,ofile
+;writeu,1,ETA
+;close,1
+
+;write out file since it takes 3 min to generate.
+;ofile = indir+'ETA_EA_294_348_12_14_byte.bin'
+;openw,1,ofile
+;writeu,1,ETA
+;close,1
+
+;;read in the file that I just wrote out
+;buffer = bytarr(3537,4182,12,(endyr-startyr)+1)
+NX = 294
+NY = 348
+ETA = bytarr(294,348,12,(endyr-startyr)+1)
+openr,1,indir+'ETA_EA_294_348_12_14_byte.bin'
+readu,1,ETA
+close,1
+
+help, evap, eta, pon
+
+;;;look at the difference;;;;
+;1. what is the mean difference for all januaries
+diff = fltarr(nx,ny,12)
+for m = 0,11 do begin &$
+  diff[*,*,m] = mean(pon[*,*,m,*]-eta[*,*,m,*], dimension=4, /nan) &$
+  p1=image(diff[*,*,m]*mask, rgb_table=66,min_value=-100,max_value=100, layout=[4,3,m+1],/current) &$
+endfor
+
+p1=image(mean(diff,dimension=3,/nan)*mask, rgb_table=66,min_value=-100,max_value=100)
+c=colorbar()
+
+;max value is 250. Make 3 contingecy tables. Wet, Dry
+;wet = <134
+;dry = <67
+;;;;;;;classify the maps as wet or dry by month;;;;;;
+eta = fix(eta)
+ETAcube = intarr(floor(nx), floor(ny), nmos, NYRS)
+TIC
+otemp = intarr(floor(nx),floor(ny))*0
+for m = 0,11 do begin &$
+  for y = 0,NYRS-1 do begin &$
+    temp = ETA[*,*,m,y] &$
+    dry = where(temp lt 67) &$
+    wet = where(temp ge 134) &$
+    otemp(dry) = 1 &$
+    otemp(wet) = 2 &$
+    ETAcube[*,*,m,y] = otemp &$
+  endfor &$
+endfor
+TOC  
+
+PONcube = intarr(floor(nx), floor(ny), nmos, NYRS)
+TIC
+otemp = intarr(floor(nx),floor(ny))*0
+for m = 0,11 do begin &$
+  for y = 0,NYRS-1 do begin &$
+  temp = PON[*,*,m,y] &$
+  dry = where(temp lt 67) &$
+  wet = where(temp ge 134) &$
+  otemp(dry) = 1 &$
+  otemp(wet) = 2 &$
+  PONcube[*,*,m,y] = otemp &$
+endfor &$
+endfor
+TOC
+
+TIC
+outmap = fltarr(floor(nx), ny)
+outmap2 = fltarr(floor(nx), ny)*!values.f_nan
+outmap3 = fltarr(floor(nx), ny)
+
+;zero is average, one is dry, 2 is wet
+CTMAP = fltarr(floor(NX),NY,NMOS, NYRS,3)
+for m = 0,11 do begin &$
+  for y = 0,NYRS-1 do begin &$
+    one = where(PONcube[*,*,m,y] eq 1 AND ETAcube[*,*,m,y] eq 1, complement=other) &$
+    two = where(PONcube[*,*,m,y] eq 1 AND ETAcube[*,*,m,y] eq 0, complement=other) &$
+    three = where(PONcube[*,*,m,y] eq 1 AND ETAcube[*,*,m,y] eq 2, complement=other) &$
+    four = where(PONcube[*,*,m,y] eq 0 AND ETAcube[*,*,m,y] eq 1, complement=other) &$
+    five = where(PONcube[*,*,m,y] eq 0 AND ETAcube[*,*,m,y] eq 0, complement=other) &$
+    six = where(PONcube[*,*,m,y] eq 0 AND ETAcube[*,*,m,y] eq 2, complement=other) &$
+    seven = where(PONcube[*,*,m,y] eq 2 AND ETAcube[*,*,m,y] eq 1, complement=other) &$
+    eight = where(PONcube[*,*,m,y] eq 2 AND ETAcube[*,*,m,y] eq 0, complement=other) &$
+    nine = where(PONcube[*,*,m,y] eq 2 AND ETAcube[*,*,m,y] eq 2, complement=other) &$
+   
+   ;wet/wet (9), dry/dry(1), s_wet/n_dry(3), s_dry,n_wet (seven)
+   
+   ;for the full array of agree/disagre
+    outmap(one) = 10 &$
+    outmap(two) = 20 &$
+    outmap(three) = 30 &$
+    outmap(four) = 40 &$
+    outmap(five) = 50 &$
+    outmap(six) = 60 &$
+    outmap(seven) = 70 &$
+    outmap(eight) = 80 &$
+    outmap(nine) = 90 &$
+    
+    ;agree (wet/wet, dry/dry, avg/avg)
+    outmap2(one) = 1 &$
+    outmap2(two) = 0 &$
+    outmap2(three) = 0 &$
+    outmap2(four) = 0 &$
+    outmap2(five) = 1 &$
+    outmap2(six) = 0 &$
+    outmap2(seven) = 0 &$
+    outmap2(eight) = 0 &$
+    outmap2(nine) = 1 &$
+
+    ;;ok how do i add this to a map?
+    CTMAP[*,*,m,y,0] = outmap &$
+    CTMAP[*,*,m,y,1] = outmap2 &$
+    CTMAP[*,*,m,y,2] = outmap3 &$
+
+  endfor &$
+    outmap = outmap*!values.f_nan &$
+    outmap2 = outmap2*!values.f_nan &$
+    outmap3 = outmap3*!values.f_nan &$
+
+endfor
+TOC
+
+agree = fltarr(nx, ny, nmos)*!values.f_nan
+for y = 0, 11 do begin &$
+  agree[*,*,y] = total(ctmap[*,*,y,*,1], 4,/nan) &$
+  p1 = image(agree[*,*,y]*mask, rgb_table=20, layout=[4,3,y+1], /current) &$
+endfor
+  p1 = image(total(agree,3)*mask, rgb_table=20)
 ;now sum the months that have water scaricity
 ;do scarcity and absolute scaricity (<83)
 help, monCMPP  
