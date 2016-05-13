@@ -149,37 +149,13 @@ help, ingrid[ea_left:ea_right,ea_bot:ea_top]
 ETA = bytarr(294,348,12,(endyr-startyr)+1)
 
 indir = '/discover/nobackup/projects/fame/Validation/SSEB/ETA_AFRICA/'
-;TIC
-;;;read in the 0.1x0.1 degree file instead
-;for y = startyr,endyr do begin &$
-;  for m = 1,12 do begin &$
-;  yy = strmid(string(y),6,2) &$
-;  ifile = file_search(strcompress(indir+'/ma'+yy+STRING(format='(I2.2)', m)+'.modisSSEBopET.tif',/remove_all)) &$
-;  ingrid = read_tiff(ifile, geotiff=gtag) &$
-;  ingrid = reverse(ingrid,2) &$
-;  ETA[*,*,m-1,y-startyr] = congrid(ingrid[ea_left:ea_right,ea_bot:ea_top],294,348) &$
-;endfor &$
-;endfor
-;TOC
 
-;write out file since it takes 3 min to generate.
-;ofile = indir+'ETA_EA_3537_4182_12_14_byte.bin'
-;openw,1,ofile
-;writeu,1,ETA
-;close,1
+;NX = 294
+;NY = 348
+ETA = bytarr(NX,NY,12,(endyr-startyr)+1)
+;openr,1,indir+'ETA_EA_294_348_12_14_byte.bin'
+openr,1,indir+'ETA_WA_446_124_12_14_byte.bin'
 
-;write out file since it takes 3 min to generate.
-;ofile = indir+'ETA_EA_294_348_12_14_byte.bin'
-;openw,1,ofile
-;writeu,1,ETA
-;close,1
-
-;;read in the file that I just wrote out
-;buffer = bytarr(3537,4182,12,(endyr-startyr)+1)
-NX = 294
-NY = 348
-ETA = bytarr(294,348,12,(endyr-startyr)+1)
-openr,1,indir+'ETA_EA_294_348_12_14_byte.bin'
 readu,1,ETA
 close,1
 
