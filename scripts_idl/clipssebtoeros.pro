@@ -25,8 +25,8 @@ help, ingrid
 
 ;West Africa (5.35 N - 17.65 N; 18.65 W - 25.85 E)
 ; west africa domain
-map_ulx = -18.65 & map_lrx = 25.85
-map_uly = 17.65 & map_lry = 5.35
+;map_ulx = -18.65 & map_lrx = 25.85
+;map_uly = 17.65 & map_lry = 5.35
 
 ;East Africa WRSI/Noah window
 ;map_ulx = 22.  & map_lrx = 51.35
@@ -35,8 +35,8 @@ map_uly = 17.65 & map_lry = 5.35
 ;Southern Africa WRSI/Noah window
 ;Southern Africa (37.85 S - 6.35 N; 6.05 E - 54.55 E)
 ;NX = 486, NY = 443
-;map_ulx = 6.05  & map_lrx = 54.55
-;map_uly = 6.35  & map_lry = -37.85
+map_ulx = 6.05  & map_lrx = 54.55
+map_uly = 6.35  & map_lry = -37.85
 
 ;;;; VIC East africa domain ;;;;;
 ;map_ulx = 21.875 & map_lrx = 51.125
@@ -85,7 +85,7 @@ endfor
 TOC
 
 ;write out file since it takes 3 min to generate.
-ofile = indir+'ETA_WA_446_124_12_14_byte.bin'
+ofile = indir+'ETA_SA_486_443_12_14_byte.bin'
 openw,1,ofile
 writeu,1,ETA
 close,1
@@ -101,8 +101,9 @@ close,1
 ;NX = 294
 ;NY = 348
 ETA = bytarr(NX,NY,12,(endyr-startyr)+1)
-openr,1,indir+'ETA_EA_294_348_12_14_byte.bin'
-openr,1,indir+'ETA_WA_446_124_12_14_byte.bin'
+;openr,1,indir+'ETA_EA_294_348_12_14_byte.bin'
+;openr,1,indir+'ETA_WA_446_124_12_14_byte.bin'
+openr,1,indir+'ETA_SA_486_443_12_14_byte.bin'
 
 readu,1,ETA
 close,1
