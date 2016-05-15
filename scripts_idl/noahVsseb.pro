@@ -3,6 +3,7 @@
 ; 3/18/16 revisit for MERRA2 comparisons
 ; 5/9/16 revist for masking and Equitable Threat Scores
 ; 5/13/16 switched to correlations, get code cleaned up for different regions for paper.
+; the percent of detection might yield better fews-like results 
 
 ;.compile /home/source/mcnally/scripts_idl/get_nc.pro
 .compile /home/almcnall/Scripts/scripts_idl/get_nc.pro
@@ -68,7 +69,7 @@ for yr=startyr,endyr do begin &$
       
   endfor &$ 
 endfor
-;is there a reason why this is zero and not nan?
+;this is prob zero since other vals are already nan.
 Evap(where(Evap lt 0)) = 0
 
 ;take the median for 2003-2013 (10yrs) for each month
@@ -162,74 +163,8 @@ close,1
 
 help, evap, eta, pon, evapmm
 
-;yemen zoom
-;YemPON = PON[200:NX-1,200:NY-1,*] & help, YemPON
-;dims = size(YemPON, /dimension)
-;yNX = dims[0]
-;yNY = dims[1]
-
-;use 3x5 for west africa but 5x3 for east and south
-;plot the Noah ET anomalies for a given month for all years.
-ncolors = 7
-;RGB_INDICES=[0,50,70,90,110,130,150]
-index = [0,50,70,90,110,130,150];
-;w = WINDOW(DIMENSIONS=[700,900])
-ct=colortable(73)
-;w=window()
-TIC
-;;;;buffer is a million times faster for this! don't print to screen!;;;;
-for i = 0,13 do begin &$
- m=11 &$
-  tmptr = CONTOUR(PON[*,*,m,i]*mask,FINDGEN(NX)/res+map_ulx, FINDGEN(NY)/res+map_lry, $
-  RGB_TABLE=ct, ASPECT_RATIO=1, Xstyle=1,Ystyle=1, layout=[5,3,i+1],$
-  /FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors), /current, /buffer) &$
-
-  ct[108:108+36,*] = 200  &$
-  tmptr.rgb_table=ct  &$
-  tmptr.title = 'Dec ETA '+ string(2003+i)  &$
-  ; m1 = MAP('Geographic',limit=[map_lry+20,map_ulx+20,map_uly,map_lrx], /overplot) &$;
-  m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot) &$;
-
-  ;mycont = MAPCONTINENTS(shapefile, /COUNTRIES,HIRES=1, thick=2) &$
-  m = MAPCONTINENTS(/COUNTRIES,  COLOR = 'black', THICK=1) &$
-  tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
-  tmptr.mapgrid.FONT_SIZE = 0 &$
-  ; cb = colorbar(target=tmptr,ORIENTATION=1,TAPER=1,/BORDER, TITLE='ETa anomaly %')
-  tmptr.save,'/home/almcnall/test2.png' &$
-endfor
-TOC
-cb = colorbar(target=tmptr,ORIENTATION=0,TAPER=1,/BORDER, TITLE='ETa anomaly %', position=[0.3,0.04,0.7,0.07])
-tmptr.save,'/home/almcnall/AugSSEB.png'
-
-;;;look at the difference;;;;
-;1. what is the mean difference for all januaries
-diff = fltarr(nx,ny,12)
-for m = 0,11 do begin &$
-  diff[*,*,m] = mean(pon[*,*,m,*]-eta[*,*,m,*], dimension=4, /nan) &$
-  ;p1=image(diff[*,*,m]*mask, rgb_table=66,min_value=-100,max_value=100, layout=[4,3,m+1],/current) &$
-endfor
-
-p1=image(mean(diff,dimension=3,/nan)*mask, rgb_table=66,min_value=-100,max_value=100)
-c=colorbar()
-
-
-;plot a time series of PON and ETA of what is going on in s. kenya/tanzania
-gmap_lry = -4.5
-gmap_ulx = 34
-gmap_uly = -1.5
-gmap_lrx = 37
-
-gulx = (gmap_ulx-map_ulx)/0.1  & glrx = (gmap_lrx-map_ulx)/0.1
-guly = abs(map_lry-gmap_uly)/0.1   & glry = abs(map_lry-gmap_lry)/0.1
-print, gulx,glrx,glry,guly
-
-;check to see I am getting the region of interest
-;temp = pon[*,*,0,0]
-;temp[gulx:glrx,glry:guly] = 2000
-;p1=image(temp,/overplot, /current, transparency=50)
-
-p1=plot(mean(mean(pon[gulx:glrx,glry:guly,2,*], dimension=1, /nan),dimension=1,/nan))
-;i guess I could map the correlation of the pon and eta for each month and the difference map is the bias.
+;monthly correlations
+;these are kinda slow, only calc when needed
 tic
 cormap=fltarr(nx,ny,nmos,2)
 for x = 0, nx-1 do begin &$
@@ -294,12 +229,12 @@ for m = 0,11 do begin &$
   if m eq 6 then c=colorbar() &$
 endfor
 
-
+;how do i get the tickmarks in the right spot. And how about a boarder?
 ncolors = 5
 index = [-1,0.3,0.4,0.5,0.65]
 ;index = [-0.2,0,0.5,0.75,0.8]
 
-tmptr = CONTOUR(cormap,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
+tmptr = CONTOUR(cormap2,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
   ASPECT_RATIO=1, Xstyle=1,Ystyle=1, $
   RGB_TABLE=64,/FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors), $
   TITLE=' CORR PON (2003-2015)', /BUFFER)  &$
@@ -319,6 +254,75 @@ for m = 0,11 do begin &$
 endfor
 
 temp= image(mean(cormap[*,*,*,0], dimension=3,/nan), rgb_table=20, min_value=-0.6, max_value=0.6)
+
+;; PON values and difference maps;
+;yemen zoom
+;YemPON = PON[200:NX-1,200:NY-1,*] & help, YemPON
+;dims = size(YemPON, /dimension)
+;yNX = dims[0]
+;yNY = dims[1]
+
+;use 3x5 for west africa but 5x3 for east and south
+;plot the Noah ET anomalies for a given month for all years.
+;ncolors = 7
+;;RGB_INDICES=[0,50,70,90,110,130,150]
+;index = [0,50,70,90,110,130,150];
+;;w = WINDOW(DIMENSIONS=[700,900])
+;ct=colortable(73)
+;;w=window()
+;TIC
+;;;;;buffer is a million times faster for this! don't print to screen!;;;;
+;for i = 0,13 do begin &$
+; m=11 &$
+;  tmptr = CONTOUR(PON[*,*,m,i]*mask,FINDGEN(NX)/res+map_ulx, FINDGEN(NY)/res+map_lry, $
+;  RGB_TABLE=ct, ASPECT_RATIO=1, Xstyle=1,Ystyle=1, layout=[5,3,i+1],$
+;  /FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors), /current, /buffer) &$
+;
+;  ct[108:108+36,*] = 200  &$
+;  tmptr.rgb_table=ct  &$
+;  tmptr.title = 'Dec ETA '+ string(2003+i)  &$
+;  ; m1 = MAP('Geographic',limit=[map_lry+20,map_ulx+20,map_uly,map_lrx], /overplot) &$;
+;  m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot) &$;
+;
+;  ;mycont = MAPCONTINENTS(shapefile, /COUNTRIES,HIRES=1, thick=2) &$
+;  m = MAPCONTINENTS(/COUNTRIES,  COLOR = 'black', THICK=1) &$
+;  tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
+;  tmptr.mapgrid.FONT_SIZE = 0 &$
+;  ; cb = colorbar(target=tmptr,ORIENTATION=1,TAPER=1,/BORDER, TITLE='ETa anomaly %')
+;  tmptr.save,'/home/almcnall/test2.png' &$
+;endfor
+;TOC
+;cb = colorbar(target=tmptr,ORIENTATION=0,TAPER=1,/BORDER, TITLE='ETa anomaly %', position=[0.3,0.04,0.7,0.07])
+;tmptr.save,'/home/almcnall/AugSSEB.png'
+
+;;;look at the difference;;;;
+;1. what is the mean difference for all januaries
+diff = fltarr(nx,ny,12)
+for m = 0,11 do begin &$
+  diff[*,*,m] = mean(pon[*,*,m,*]-eta[*,*,m,*], dimension=4, /nan) &$
+  ;p1=image(diff[*,*,m]*mask, rgb_table=66,min_value=-100,max_value=100, layout=[4,3,m+1],/current) &$
+endfor
+
+p1=image(mean(diff,dimension=3,/nan)*mask, rgb_table=66,min_value=-100,max_value=100)
+c=colorbar()
+
+;plot a time series of PON and ETA of what is going on in s. kenya/tanzania
+gmap_lry = -4.5
+gmap_ulx = 34
+gmap_uly = -1.5
+gmap_lrx = 37
+
+gulx = (gmap_ulx-map_ulx)/0.1  & glrx = (gmap_lrx-map_ulx)/0.1
+guly = abs(map_lry-gmap_uly)/0.1   & glry = abs(map_lry-gmap_lry)/0.1
+print, gulx,glrx,glry,guly
+
+;check to see I am getting the region of interest
+;temp = pon[*,*,0,0]
+;temp[gulx:glrx,glry:guly] = 2000
+;p1=image(temp,/overplot, /current, transparency=50)
+
+p1=plot(mean(mean(pon[gulx:glrx,glry:guly,2,*], dimension=1, /nan),dimension=1,/nan))
+
 
 ;max value is 250. Make 3 contingecy tables. Wet, Dry
 ;wet = <134
