@@ -19,8 +19,8 @@ nmos = endmo - startmo+1
 
 ;West Africa (5.35 N - 17.65 N; 18.65 W - 25.85 E)
 ; west africa domain
-;map_ulx = -18.65 & map_lrx = 25.85
-;map_uly = 17.65 & map_lry = 5.35
+map_ulx = -18.65 & map_lrx = 25.85
+map_uly = 17.65 & map_lry = 5.35
 
 ;East Africa WRSI/Noah window
 ;map_ulx = 22.  & map_lrx = 51.35
@@ -29,8 +29,8 @@ nmos = endmo - startmo+1
 ;Southern Africa WRSI/Noah window
 ;Southern Africa (37.85 S - 6.35 N; 6.05 E - 54.55 E) 
 ;NX = 486, NY = 443
-map_ulx = 6.05  & map_lrx = 54.55
-map_uly = 6.35  & map_lry = -37.85
+;map_ulx = 6.05  & map_lrx = 54.55
+;map_uly = 6.35  & map_lry = -37.85
 
 ;;;; VIC East africa domain ;;;;;
 ;map_ulx = 21.875 & map_lrx = 51.125
@@ -45,9 +45,10 @@ NY = lry - uly + 2
 
 ;;;read in monthly data to compare to monthly SSEB;;;;;;
 ;data_dir = '/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_EA/post/'
-data_dir = '/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_SA/post/'
+;data_dir = '/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_SA/post/'
+data_dir = '/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_WA/post/'
 
-
+tic
 Evap = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
 ;this loop reads in the selected months only
 for yr=startyr,endyr do begin &$
@@ -58,8 +59,8 @@ for yr=startyr,endyr do begin &$
     m = m-12 &$
     y = y+1 &$
   endif &$
-  ;ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_C_WA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
-  ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_C_SA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
+  ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_C_WA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
+  ;ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_C_SA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
   
   ;variable of interest
   VOI = 'Evap_tavg' &$ 
@@ -69,6 +70,7 @@ for yr=startyr,endyr do begin &$
       
   endfor &$ 
 endfor
+toc
 ;this is prob zero since other vals are already nan.
 Evap(where(Evap lt 0)) = 0
 
@@ -90,15 +92,18 @@ month = ['jan', 'feb', 'mar','apr','may','jun','jul','aug','sep','oct','nov','de
 ;;WRSI and Noah landcover mask
 ;ifile = file_search('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/lis_input_wrsi.ea_oct2feb.nc')
 ;ifile = file_search('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/lis_input_wrsi.ea_may2nov.nc')
-ifile = file_search('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/lis_input_wrsi.sa.nc')
+;ifile = file_search('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/lis_input_wrsi.sa.nc')
+ifile = file_search('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/lis_input_wrsi.wa.nc')
+
 fileID = ncdf_open(ifile)
 VOI = 'WRSIMASK'
 wrsimask = get_nc(VOI, ifile)
+wrsimask(where(wrsimask eq 0))=!values.f_nan
 
 indir = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/Param_Noah3.3/'
 ;ifile = file_search(indir+'lis_input.MODISmode_ea.nc');lis_input_wa_elev.nc
-;ifile = file_search(indir+'lis_input_wa_elev_mode.nc'); I need 'mode' for west africa too. Is that on Rain?
-ifile = file_search(indir+'lis_input_sa_elev_mode.nc')
+ifile = file_search(indir+'lis_input_wa_elev_mode.nc'); 
+;ifile = file_search(indir+'lis_input_sa_elev_mode.nc')
 
 VOI = 'LANDCOVER'
 LC = get_nc(VOI, ifile)
@@ -156,8 +161,8 @@ indir = '/discover/nobackup/projects/fame/Validation/SSEB/ETA_AFRICA/'
 ;NY = 348
 ETA = bytarr(NX,NY,12,(endyr-startyr)+1)
 ;openr,1,indir+'ETA_EA_294_348_12_14_byte.bin'
-;openr,1,indir+'ETA_WA_446_124_12_14_byte.bin'
-openr,1,indir+'ETA_SA_486_443_12_14_byte.bin'
+openr,1,indir+'ETA_WA_446_124_12_14_byte.bin'
+;openr,1,indir+'ETA_SA_486_443_12_14_byte.bin'
 readu,1,ETA
 close,1
 
@@ -190,14 +195,14 @@ endfor &$
 endfor
 toc
 
-;;;experiment with west africa
+;;;experiment with west africa, just show wet season per Pete's map July-Aug-Sept, ugh, not much better.
 ;noahTS = fltarr(nx,ny,nyrs-1)
 ;ssebTS = fltarr(nx,ny,nyrs-1)
 ;tic
 ;for x = 0, nx-1 do begin &$
 ;  for y = 0,ny-1 do begin &$
-;  noahTS[x,y,*] = mean(pon[x,y,5:9,0:12],dimension=3,/nan) &$
-;  ssebTS[x,y,*] = mean(eta[x,y,5:9,0:12],dimension=3,/nan) &$
+;  noahTS[x,y,*] = mean(pon[x,y,6:8,0:12],dimension=3,/nan) &$
+;  ssebTS[x,y,*] = mean(eta[x,y,6:8,0:12],dimension=3,/nan) &$
 ;endfor &$
 ;endfor
 ;toc
@@ -211,7 +216,6 @@ endfor &$
 endfor
 toc
 
-wrsimask(where(wrsimask eq 0)) = !values.f_nan
 wmaskcube = rebin(wrsimask,nx,ny,13*12)
 tzN = mean(mean(noahTS*wmaskcube, dimension=1, /nan),dimension=1,/nan)
 tzS = mean(mean(ssebTS*wmaskcube, dimension=1, /nan),dimension=1,/nan)
