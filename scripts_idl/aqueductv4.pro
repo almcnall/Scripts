@@ -4,11 +4,15 @@
 ;03/03/16 update for discover
 ;03/10/16 update with Jan. CHIRPS+MERRA2 data for Chemonics
 ;03/20/16 update with the HYMAP data
-;03/24/14 update with average (not sum) hymap data
+;03/24/16 update with average (not sum) hymap data
+;05/17/16 update for paper use with seasonal_wateravail.pro. Use the hymap routed, rather than just RO
+;05/21/16 figure update for paper
+;05/24/16 write out geoTIffs for Tamuka
+;06/03/16 add in the other models.
 
 .compile /home/almcnall/Scripts/scripts_idl/get_nc.pro
-.compile /home/almcnall/Scripts/scripts_idl/nve.pro
-.compile /home/almcnall/Scripts/scripts_idl/mve.pro
+;.compile /home/almcnall/Scripts/scripts_idl/nve.pro
+;.compile /home/almcnall/Scripts/scripts_idl/mve.pro
 ;.compile /home/source/mcnally/scripts_idl/get_nc.pro
 
 startyr = 1982 ;start with 1982 since no data in 1981
@@ -26,29 +30,25 @@ nmos = endmo - startmo+1
 ;map_uly = 17.65 & map_lry = 5.35
 
 ;East Africa WRSI/Noah window
-map_ulx = 22.  & map_lrx = 51.35
-map_uly = 22.95  & map_lry = -11.75
+;map_ulx = 22.  & map_lrx = 51.35
+;map_uly = 22.95  & map_lry = -11.75
 
 ;Southern Africa WRSI/Noah window
 ;Southern Africa (37.85 S - 6.35 N; 6.05 E - 54.55 E) 
 ;NX = 486, NY = 443
-;map_ulx = 6.05  & map_lrx = 54.55
-;map_uly = 6.35  & map_lry = -37.85
+map_ulx = 6.05  & map_lrx = 54.55
+map_uly = 6.35  & map_lry = -37.85
 
 ulx = (180.+map_ulx)*10.  & lrx = (180.+map_lrx)*10.-1
 uly = (50.-map_uly)*10.   & lry = (50.-map_lry)*10.-1
 NX = lrx - ulx + 2 
 NY = lry - uly + 2
 
-;data_dir = '/home/ftp_out/people/mcnally/FLDAS/FLDAS4DISC/NOAH_RFE2_GDAS_SA/';FLDAS_NOAH01_B_SA_M.A201507.001.nc
-data_dir='/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/Noah33_CHIRPS_MERRA2_EA/post/'
-;data_dir='/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_SA/HYMAP/OUTPUT_SA1981/post/'
-;data_dir='/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_EA/HYMAP/OUTPUT_EA1981/post/'
+;;;;;;use hymap runoff rather than non-routed;;;;
+data_dir='/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_SA/HYMAP/OUTPUT_SA1981/post/'
 
 Qsub = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
 Qsuf = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
-SM01 = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
-SM02 = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
 
 ;this loop reads in the selected months only
 for yr=startyr,endyr do begin &$
@@ -59,41 +59,23 @@ for yr=startyr,endyr do begin &$
     m = m-12 &$
     y = y+1 &$
   endif &$
-  ;fileID = ncdf_open(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_B_EA_M.A'',I4.4,I2.2,''.001.nc'')',y,m), /nowrite) &$
-  ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_C_EA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
-  ;ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_H_SA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
-  ;ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_H_EA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
-
-
-  VOI = 'Qs_tavg' &$ ;RiverStor_tavg
-  ;VOI = 'RiverStor_tavg' &$ ;
+  ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_H_SA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
+  
+  VOI = 'RiverStor_tavg' &$ ;
   Qs = get_nc(VOI, ifile) &$
   Qsuf[*,*,i,yr-startyr] = Qs &$
     
-  VOI = 'Qsb_tavg' &$ ;FloodStor_tavg
-  ;VOI = 'FloodStor_tavg' &$ ;
+  VOI = 'FloodStor_tavg' &$ ;
   Qsb = get_nc(VOI, ifile) &$
   Qsub[*,*,i,yr-startyr] = Qsb &$
   
-  VOI = 'SoilMoi00_10cm_tavg' &$ ;RiverStor_tavg
-  SM = get_nc(VOI, ifile) &$
-  SM01[*,*,i,yr-startyr] = SM &$
-  
-  VOI = 'SoilMoi10_40cm_tavg' &$ ;RiverStor_tavg
-  SM = get_nc(VOI, ifile) &$
-  SM02[*,*,i,yr-startyr] = SM &$
-  
   endfor &$ 
 endfor
-Qsuf(where(Qsuf lt 0)) = 0
-SM01(where(SM01 lt 0)) = 0
-SM02(where(SM02 lt 0)) = 0
-
-;for i=0,11 do temp = image(mean(ROmm[*,*,i,*], /nan, dimension=4), layout=[4,3,i+1],max_value=10, /current)
+Qsuf(where(Qsuf lt 0)) = !values.f_nan
+Qsub(where(Qsub lt 0)) = !values.f_nan
 
 RO = Qsuf+Qsub
 ROmm = RO
-;ROmm  = RO*86400*30 ;YES
 
 ;;;;Plot population;;;;;;;
 indir = '/discover/nobackup/almcnall/Africa-POP/'
@@ -132,7 +114,7 @@ help, ROmm
 ;how much RO per person per month? I guess multiplying by 1000 gets us from mm to m3?
 
 CMPPcube = (ROmm/popcube)     & help, CMPPcube
-;CMPPcube = (ROmm/popcube)*1000      & help, CMPPcube
+;CMPPcube = (ROmm/popcube)     & help, CMPPcube
 ;CMPPcube(where(CMPPcube gt 8973))= 8973
 
 ;what is the average per person per month (show 12 months)
@@ -140,6 +122,7 @@ CMPPcube = (ROmm/popcube)     & help, CMPPcube
 ;take the ratio of the observed CMPP to the average CMPP, 
 ;I should keep this standard to a particular time period.
 monRO = mean(ROmm,dimension=4,/nan) & help, monRO
+
 ;monCMPP  = (monRO/pop12)*1000      & help, monCMPP
 monCMPP  = (monRO/pop12)      & help, monCMPP
 
@@ -274,8 +257,8 @@ print, max(cmppcube(where(finite(cmppcube))));yeah - CMPP gets larger ..when it 
  ct=colortable(72,/reverse)
  
  ;put a cap on percent of normal before writing out.
- CMPPanom(where(CMPPanom gt 2))=2
- ROanom(where(ROanom gt 2))=2
+ CMPPanom(where(CMPPanom gt 2.5))=2.5
+ ROanom(where(ROanom gt 2.5))=2.5
 
  ;apply the pop mask before writing out.
  CMPPout = CMPPanom*popmaskcube
@@ -1110,6 +1093,38 @@ map_uly = 22.95  & map_lry = -11.75
 ; west africa domain
 ;map_ulx = -18.65 & map_lrx = 25.85
 ;map_uly = 17.65 & map_lry = 5.35
+
+;;;if I decide i need non-hymap vars here is some sample code;;;;;
+;;first get the surface and subsurface runoff (then HYMAP)
+data_dir='/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/Noah33_CHIRPS_MERRA2_SA/post/'
+Qsub0 = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
+Qsuf0 = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
+;SM01 = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
+;SM02 = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
+
+;this loop reads in the selected months only
+for yr=startyr,endyr do begin &$
+  for i=0,nmos-1 do begin &$
+  y = yr &$
+  m = startmo + i &$
+  if m gt 12 then begin &$
+  m = m-12 &$
+  y = y+1 &$
+endif &$
+ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_C_SA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
+
+VOI = 'Qs_tavg' &$ ;RiverStor_tavg
+Qs = get_nc(VOI, ifile) &$
+Qsuf0[*,*,i,yr-startyr] = Qs &$
+
+VOI = 'Qsb_tavg' &$ ;FloodStor_tavg
+Qsb = get_nc(VOI, ifile) &$
+Qsub0[*,*,i,yr-startyr] = Qsb &$
+
+endfor &$
+endfor
+Qsuf0(where(Qsuf0 lt 0)) = !values.f_nan
+Qsub0(where(Qsub0 lt 0)) = !values.f_nan
 
 
 

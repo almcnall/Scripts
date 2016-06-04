@@ -4,6 +4,7 @@
 ; 5/9/16 revist for masking and Equitable Threat Scores
 ; 5/13/16 switched to correlations, get code cleaned up for different regions for paper.
 ; the percent of detection might yield better fews-like results 
+; 5/22/16 plot going into the FLDAS paper.
 
 ;.compile /home/source/mcnally/scripts_idl/get_nc.pro
 .compile /home/almcnall/Scripts/scripts_idl/get_nc.pro
@@ -17,10 +18,13 @@ startmo = 1
 endmo = 12
 nmos = endmo - startmo+1
 
+;;need a part of the script that bundles these dimensions and file names so 
+;that its easier to switch domains.
+
 ;West Africa (5.35 N - 17.65 N; 18.65 W - 25.85 E)
 ; west africa domain
-map_ulx = -18.65 & map_lrx = 25.85
-map_uly = 17.65 & map_lry = 5.35
+;map_ulx = -18.65 & map_lrx = 25.85
+;map_uly = 17.65 & map_lry = 5.35
 
 ;East Africa WRSI/Noah window
 ;map_ulx = 22.  & map_lrx = 51.35
@@ -29,8 +33,8 @@ map_uly = 17.65 & map_lry = 5.35
 ;Southern Africa WRSI/Noah window
 ;Southern Africa (37.85 S - 6.35 N; 6.05 E - 54.55 E) 
 ;NX = 486, NY = 443
-;map_ulx = 6.05  & map_lrx = 54.55
-;map_uly = 6.35  & map_lry = -37.85
+map_ulx = 6.05  & map_lrx = 54.55
+map_uly = 6.35  & map_lry = -37.85
 
 ;;;; VIC East africa domain ;;;;;
 ;map_ulx = 21.875 & map_lrx = 51.125
@@ -45,8 +49,8 @@ NY = lry - uly + 2
 
 ;;;read in monthly data to compare to monthly SSEB;;;;;;
 ;data_dir = '/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_EA/post/'
-;data_dir = '/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_SA/post/'
-data_dir = '/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_WA/post/'
+data_dir = '/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_SA/post/'
+;data_dir = '/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_WA/post/'
 
 tic
 Evap = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
@@ -59,8 +63,8 @@ for yr=startyr,endyr do begin &$
     m = m-12 &$
     y = y+1 &$
   endif &$
-  ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_C_WA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
-  ;ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_C_SA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
+  ;ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_C_WA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
+  ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_C_SA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
   
   ;variable of interest
   VOI = 'Evap_tavg' &$ 
@@ -92,8 +96,8 @@ month = ['jan', 'feb', 'mar','apr','may','jun','jul','aug','sep','oct','nov','de
 ;;WRSI and Noah landcover mask
 ;ifile = file_search('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/lis_input_wrsi.ea_oct2feb.nc')
 ;ifile = file_search('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/lis_input_wrsi.ea_may2nov.nc')
-;ifile = file_search('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/lis_input_wrsi.sa.nc')
-ifile = file_search('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/lis_input_wrsi.wa.nc')
+ifile = file_search('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/lis_input_wrsi.sa.nc')
+;ifile = file_search('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/lis_input_wrsi.wa.nc')
 
 fileID = ncdf_open(ifile)
 VOI = 'WRSIMASK'
@@ -102,8 +106,8 @@ wrsimask(where(wrsimask eq 0))=!values.f_nan
 
 indir = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/Param_Noah3.3/'
 ;ifile = file_search(indir+'lis_input.MODISmode_ea.nc');lis_input_wa_elev.nc
-ifile = file_search(indir+'lis_input_wa_elev_mode.nc'); 
-;ifile = file_search(indir+'lis_input_sa_elev_mode.nc')
+;ifile = file_search(indir+'lis_input_wa_elev_mode.nc'); 
+ifile = file_search(indir+'lis_input_sa_elev_mode.nc')
 
 VOI = 'LANDCOVER'
 LC = get_nc(VOI, ifile)
@@ -161,12 +165,49 @@ indir = '/discover/nobackup/projects/fame/Validation/SSEB/ETA_AFRICA/'
 ;NY = 348
 ETA = bytarr(NX,NY,12,(endyr-startyr)+1)
 ;openr,1,indir+'ETA_EA_294_348_12_14_byte.bin'
-openr,1,indir+'ETA_WA_446_124_12_14_byte.bin'
-;openr,1,indir+'ETA_SA_486_443_12_14_byte.bin'
+;openr,1,indir+'ETA_WA_446_124_12_14_byte.bin'
+openr,1,indir+'ETA_SA_486_443_12_14_byte.bin'
 readu,1,ETA
 close,1
 
+ETA=float(ETA)
 help, evap, eta, pon, evapmm
+
+;;;now I just want to plot the observations/PON side by side
+;plot the Noah ET anomalies for a given month for all/one years.
+ncolors = 7
+;RGB_INDICES=[0,50,70,90,110,130,150]
+index = [0,50,70,90,110,130,150];
+;w = WINDOW(DIMENSIONS=[700,900])
+ct=colortable(73)
+;w=window()
+TIC
+;;;;buffer is a million times faster for this! don't print to screen!;;;;
+ y=13
+ m=1 ;zero index 1=feb
+;for y = 0,13 do begin &$
+  tmptr = CONTOUR(ETA[*,*,m,y]*mask,FINDGEN(NX)/res+map_ulx, FINDGEN(NY)/res+map_lry, $
+  RGB_TABLE=ct, ASPECT_RATIO=1, Xstyle=1,Ystyle=1, layout=[2,1,2],/current,/buffer, $
+  /FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors)) &$
+
+  ct[108:108+36,*] = 200  &$
+  tmptr.rgb_table=ct  &$
+  tmptr.title = 'SSEBop ETA Feb'+ string(2003+y)  &$
+  ; m1 = MAP('Geographic',limit=[map_lry+20,map_ulx+20,map_uly,map_lrx], /overplot) &$;
+  m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot) &$;
+
+  ;mycont = MAPCONTINENTS(shapefile, /COUNTRIES,HIRES=1, thick=2) &$
+  m = MAPCONTINENTS(/COUNTRIES,  COLOR = 'black', THICK=1) &$
+  tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
+  tmptr.mapgrid.FONT_SIZE = 0 &$
+  ; cb = colorbar(target=tmptr,ORIENTATION=1,TAPER=1,/BORDER, TITLE='ETa anomaly %')
+  ;tmptr.save,'/home/almcnall/test.png' &$
+;endfor
+TOC
+;position = x1,y1, x2, y2
+;cb = colorbar(target=tmptr,ORIENTATION=0,TAPER=1,/BORDER, TITLE='ETa anomaly %', position=[0.3,0.14,0.7,0.17])
+tmptr.save,'/home/almcnall/FEB_SSEB_ET.png'
+
 
 ;monthly correlations
 ;these are kinda slow, only calc when needed

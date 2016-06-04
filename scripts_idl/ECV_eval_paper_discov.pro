@@ -4,7 +4,7 @@
 ;; borrow CHIRPS_NDVI_EAv2.pro for figures w/ ECV manuscript
 ;; for Rainfall totals & station density see map_CHG_Stations.pr/
 ;; 12/21/15 back for minor revisions
-;; 05/16/16 update to work on discover
+;; 05/16/16 update to work on discover started on orignal file but am branching
 
 ;May 25 and June 11,18 revisit for revisions: see revisions_Jun22.pro
 ;;look at Noah values at the Mpala site
@@ -83,7 +83,7 @@ gvf = mean(green25,dimension=3,/nan)*long25 & help, gvf
 
 ;have to run this twice for the 1982 and 1992 plots. not ideal.
 startyr = 1982 ;start with 1982 to match NDVI
-endyr = 2013 ;when does the new CCI-SM end?
+endyr = 2014 
 nyrs = endyr-startyr+1
 
 ;re-do for all months
@@ -101,12 +101,10 @@ NX = lrx - ulx + 1.5
 NY = lry - uly + 2
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;data_dir = '/home/ftp_out/people/mcnally/FLDAS/FLDAS4DISC/NOAH_CHIRPSv2_MERRA_EA/'
-data_dir = '/home/ftp_out/people/mcnally/FLDAS/FLDAS4DISC/NOAH_CHIRPSv2.001_MERRA_EA/'
-data_dirE = '/home/sandbox/people/mcnally/ECV_shrad/';monthly ECV soil mositure 1982-2013 '
-data_dirV = '/home/ftp_out/people/mcnally/FLDAS/FLDAS4DISC/VIC_CHIRPSv2.001_MERRA_EA/'
+;data_dir = '/home/ftp_out/people/mcnally/FLDAS/FLDAS4DISC/NOAH_CHIRPSv2.001_MERRA_EA/'
+data_dir = '/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_EA/post/'
 ;data_dirV = '/home/sandbox/people/mcnally/VIC_CHIRPSv2.0_MERRA_EA/' ;update theis to CHIRPSv2
-
+data_dirV = '/discover/nobackup/projects/fame/MODEL_RUNS/VIC_OUTPUT/OUTPUT_M2C_EA/post/'
 SM = FLTARR(NX,NY,nmos,nyrs)
 VIC01 = FLTARR(118,141,nmos,nyrs)
 
@@ -129,7 +127,7 @@ for yr=startyr,endyr do begin &$
     y = y+1 &$
   endif &$
 
-  fileID = ncdf_open(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_B_EA_M.A'',I4.4,I2.2,''.001.nc'')',y,m), /nowrite) &$
+  fileID = ncdf_open(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_C_EA_M.A'',I4.4,I2.2,''.001.nc'')',y,m), /nowrite) &$
  
   SoilID = ncdf_varid(fileID,'SoilMoi00_10cm_tavg') &$
   ncdf_varget,fileID, SoilID, SM01 &$
@@ -144,7 +142,7 @@ for yr=startyr,endyr do begin &$
   Nrain[*,*,i,yr-startyr] = P*longmask*land &$
 
  ;;;;;;;;;;;;;;;;;;;;;;;; VIC;;;;;  
-  fileID = ncdf_open(data_dirV+STRING(FORMAT='(''FLDAS_VIC025_B_EA_M.A'',I4.4,I2.2,''.001.nc'')',y,m), /nowrite) &$
+  fileID = ncdf_open(data_dirV+STRING(FORMAT='(''FLDAS_VIC025_C_EA_M.A'',I4.4,I2.2,''.001.nc'')',y,m), /nowrite) &$
   SoilID = ncdf_varid(fileID,'SoilMoi00_10cm_tavg') &$
   ncdf_varget,fileID, SoilID, SM01V &$
   VIC01[*,*,i,yr-startyr] = SM01V*long25V*land25V &$
@@ -184,17 +182,37 @@ NOAHCUBE = reform(NOAH_SM25,NX,NY,nmos,nyrs)
 ;NOAHCUBE_ET = reform(NOAH_ET25,NX,NY,nmos,nyrs)
 NOAHCUBE_P = reform(NOAH_P25,NX,NY,nmos,nyrs)
 
-;ECV SOIL MOISUTURE
-fileID = ncdf_open(data_dirE+'Monthly_East_Africa_1979-2013_ESACCI-SOILMOISTURE-L3S-SSMV-COMBINED.nc') &$
-SoilID = ncdf_varid(fileID,'sm') &$
-ncdf_varget,fileID, SoilID, ECV
+;ECV SOIL MOISUTURE preprocessed with cdo
+;data_dirE = '/home/sandbox/people/mcnally/ECV_shrad/';monthly ECV soil mositure 1982-2013 '
+data_dirE = '/discover/nobackup/projects/fame/RS_DATA1/CCI_SM_v02.2/data/combined/monmean/'
 
-FLAGID = ncdf_varid(fileID,'flag') &$
-ncdf_varget,fileID, FLAGID, FLAG
-flag = reverse(flag,2)
+;now read in the monthly data how is this going to work?
+;nx, ny, 12, nyrs
+;get dimensions from one of the files
+  fileID = ncdf_open(strcompress(data_dirE+'CCISMv2.2_MONMEAN_AFR_2014.nc', /remove_all)) 
+  SoilID = ncdf_varid(fileID,'sm')
+  ncdf_varget,fileID, SoilID, ECV 
+temp = size(ECV, /dimensions)
+NX = temp[0]
+NY = temp[1]
+NZ = temp[2]
 
-ECV(WHERE(ECV LT -9998)) = !VALUES.f_NAN
-ECV = REVERSE(ECV,2)*0.0001
+tic
+ECVcube = fltarr(NX, NY, NMOS, NYRS)* !values.f_nan
+for yr = startyr, endyr do begin &$
+  fileID = ncdf_open(strcompress(data_dirE+'CCISMv2.2_MONMEAN_AFR_'+string(yr)+'.nc', /remove_all)) &$
+  SoilID = ncdf_varid(fileID,'sm') &$
+  ncdf_varget,fileID, SoilID, ECV &$
+  ECVcube[*,*,*,yr-startyr] = reverse(ECV,2)*0.0001 &$
+endfor
+toc
+ECVcube(WHERE(ECVcube LT -9998)) = !VALUES.f_NAN
+
+;try with no flag and see how it goes. I could make another file with this info.      
+;FLAGID = ncdf_varid(fileID,'flag') &$
+;ncdf_varget,fileID, FLAGID, FLAG
+;flag = reverse(flag,2)
+      
 
 longECV = rebin(long25,nx,ny,420) & help, longECV
 landECV = rebin(land25,nx,ny,420) & help, landECV
