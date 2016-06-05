@@ -7,6 +7,7 @@ FUNCTION quick_amy_wrapper,inyear,inmonth,inday
 ;to /home/sandbox/people/mcnally/CHIRPS4LIS/ for unzipping
 ;for i in {1981..2015}; do mkdir $i;done
 ;revist 9/8/15, how do i run this? compile this, Afr05_to_Afr10.pro and run the commented for-loop below
+;6/4/16 still need this to run LIS-WRSI. srsly.
 ;
 ;ndays = [31,28,31,30,31,30,31,31,30,31,30,31]
 ;;for inyear=2015,2015 do begin &$
@@ -16,8 +17,7 @@ FUNCTION quick_amy_wrapper,inyear,inmonth,inday
 ;;endfor &$
 ;endfor
 
-
-   in_data_dir = '/home/sandbox/people/mcnally/CHIRPS4LIS/p05/p05/'
+   in_data_dir = '/home/sandbox/people/mcnally/CHIRPS4LIS/'
 
    out_data_dir = '/home/ftp_out/people/mcnally/lis/CHIRPS-v2.0/' ;chirps-v2.0.1981.12.31.tif
    
