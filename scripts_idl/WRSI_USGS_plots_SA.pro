@@ -5,6 +5,7 @@ WRSI_USGS_plots_SA
 ;1/23/16 revisit for SAfrica forecasts
 ;2/20/16 use for Dalia's GPM SOS plots
 ;3/03/16 update for median WRSI plots
+;06/04/16 WRSI plot for paper.
 
 ;make the wrsi color table available
 ;on Rain
@@ -20,9 +21,14 @@ cd, wkdir
 indir = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/'
 
 ;read in the historic CHIRPS EOS so I can make the median
-ifile = file_search(indir+'WRSI_CHIRPS_SA_SEP2MAY_RFECHP/zbyvar/WRSI_EOS_*.nc')
+ifile = file_search(indir+'WRSI_CHIRPS_SA_SEP2MAY_RFECHP4paper/SURFACEMODEL/201602/LIS_HIST_*29*.nc')
 ;ifile = file_search(indir+'WRSI_EOS_*.nc')
 hEOS = fltarr(486,443,n_elements(ifile))
+
+;read in one to just make a EROS-like plot
+
+
+
 
 for i = 0, n_elements(ifile)-1 do begin &$
   fileID = ncdf_open(ifile[i], /nowrite) &$

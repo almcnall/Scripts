@@ -8,74 +8,16 @@
 ;05/17/16 update for paper use with seasonal_wateravail.pro. Use the hymap routed, rather than just RO
 ;05/21/16 figure update for paper
 ;05/24/16 write out geoTIffs for Tamuka
-;06/03/16 add in the other models.
+;06/03/16 add in the other models, switch back to runoff qsub+sb
+;06/05/16 move read in to a different script.
 
 .compile /home/almcnall/Scripts/scripts_idl/get_nc.pro
 ;.compile /home/almcnall/Scripts/scripts_idl/nve.pro
 ;.compile /home/almcnall/Scripts/scripts_idl/mve.pro
 ;.compile /home/source/mcnally/scripts_idl/get_nc.pro
 
-startyr = 1982 ;start with 1982 since no data in 1981
-endyr = 2016
-nyrs = endyr-startyr+1
-
-;re-do for all months
-startmo = 1
-endmo = 12
-nmos = endmo - startmo+1
-
-;West Africa (5.35 N - 17.65 N; 18.65 W - 25.85 E)
-; west africa domain
-;map_ulx = -18.65 & map_lrx = 25.85
-;map_uly = 17.65 & map_lry = 5.35
-
-;East Africa WRSI/Noah window
-;map_ulx = 22.  & map_lrx = 51.35
-;map_uly = 22.95  & map_lry = -11.75
-
-;Southern Africa WRSI/Noah window
-;Southern Africa (37.85 S - 6.35 N; 6.05 E - 54.55 E) 
-;NX = 486, NY = 443
-map_ulx = 6.05  & map_lrx = 54.55
-map_uly = 6.35  & map_lry = -37.85
-
-ulx = (180.+map_ulx)*10.  & lrx = (180.+map_lrx)*10.-1
-uly = (50.-map_uly)*10.   & lry = (50.-map_lry)*10.-1
-NX = lrx - ulx + 2 
-NY = lry - uly + 2
-
-;;;;;;use hymap runoff rather than non-routed;;;;
-data_dir='/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_SA/HYMAP/OUTPUT_SA1981/post/'
-
-Qsub = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
-Qsuf = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
-
-;this loop reads in the selected months only
-for yr=startyr,endyr do begin &$
-  for i=0,nmos-1 do begin &$
-  y = yr &$
-  m = startmo + i &$
-  if m gt 12 then begin &$
-    m = m-12 &$
-    y = y+1 &$
-  endif &$
-  ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_H_SA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
-  
-  VOI = 'RiverStor_tavg' &$ ;
-  Qs = get_nc(VOI, ifile) &$
-  Qsuf[*,*,i,yr-startyr] = Qs &$
-    
-  VOI = 'FloodStor_tavg' &$ ;
-  Qsb = get_nc(VOI, ifile) &$
-  Qsub[*,*,i,yr-startyr] = Qsb &$
-  
-  endfor &$ 
-endfor
-Qsuf(where(Qsuf lt 0)) = !values.f_nan
-Qsub(where(Qsub lt 0)) = !values.f_nan
-
-RO = Qsuf+Qsub
-ROmm = RO
+;;USE readin_RFE_NOAH_Qs or readin_CHIRPS_NOAH_Qs
+help, RO_RFE01, RO_CHIRPS01
 
 ;;;;Plot population;;;;;;;
 indir = '/discover/nobackup/almcnall/Africa-POP/'
@@ -105,22 +47,29 @@ landmask(where(landmask eq 0))=!values.f_nan
 
 ;popmask=popmask*landmask
 
-;;compute m3 per capita per month
+; compute m3 per capita per month
+; the cubes needs to be different for RFE and CHIRPS.
+; This is where rainfall and model bias makes things interesting.
+help, RO_RFE01, RO_CHIRPS01
+
 pop12 = rebin(pop,NX,NY,nmos) & help, pop12
-popcube  = rebin(pop,NX,NY,nmos,nyrs) & help, popcube
-popmaskcube = rebin(popmask,NX,NY,nmos,nyrs) & help, popmaskcube
+
+popcube82  = rebin(pop,NX,NY,nmos,n_elements(ro_chirps01[0,0,0,*])) & help, popcube82
+popcube01  = rebin(pop,NX,NY,nmos,n_elements(ro_rfe01[0,0,0,*])) & help, popcube01
+
+popmaskcube82 = rebin(popmask,NX,NY,nmos,n_elements(ro_chirps01[0,0,0,*])) & help, popmaskcube82
+popmaskcube01 = rebin(popmask,NX,NY,nmos,n_elements(ro_rfe01[0,0,0,*])) & help, popmaskcube01
+
 ;how much runoff is there every month?
 help, ROmm
 ;how much RO per person per month? I guess multiplying by 1000 gets us from mm to m3?
 
-CMPPcube = (ROmm/popcube)     & help, CMPPcube
-;CMPPcube = (ROmm/popcube)     & help, CMPPcube
+CMPPcube01 = (RO_RFE01/popcube01)     & help, CMPPcube01
+CMPPcube82 = (RO_CHIRPS01/popcube82)     & help, CMPPcube82
+;prob need some cap
 ;CMPPcube(where(CMPPcube gt 8973))= 8973
 
-;what is the average per person per month (show 12 months)
-
-;take the ratio of the observed CMPP to the average CMPP, 
-;I should keep this standard to a particular time period.
+;what is the average monthly (multi-month?) CMPP - Wada used e.g. JFM, AMJ, JAS, OND
 monRO = mean(ROmm,dimension=4,/nan) & help, monRO
 
 ;monCMPP  = (monRO/pop12)*1000      & help, monCMPP

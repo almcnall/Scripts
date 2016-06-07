@@ -5,90 +5,41 @@
 ; 5/13/16 switched to correlations, get code cleaned up for different regions for paper.
 ; the percent of detection might yield better fews-like results 
 ; 5/22/16 plot going into the FLDAS paper.
+; 6/06/16 pull out the read-in like i did for the runoff 
 
-;.compile /home/source/mcnally/scripts_idl/get_nc.pro
 .compile /home/almcnall/Scripts/scripts_idl/get_nc.pro
+;.compile /home/almcnall/Scripts/scripts_idl/nve.pro
+;.compile /home/almcnall/Scripts/scripts_idl/mve.pro
+;.compile /home/source/mcnally/scripts_idl/get_nc.pro
 
 startyr = 2003 ;start with 1982 since no data in 1981
 endyr = 2016
 nyrs = endyr-startyr+1
 
-;East Africa May-Sept, Aug-Dec, West Africa June-October
+;re-do for all months
 startmo = 1
 endmo = 12
 nmos = endmo - startmo+1
 
-;;need a part of the script that bundles these dimensions and file names so 
-;that its easier to switch domains.
-
 ;West Africa (5.35 N - 17.65 N; 18.65 W - 25.85 E)
 ; west africa domain
-;map_ulx = -18.65 & map_lrx = 25.85
-;map_uly = 17.65 & map_lry = 5.35
+map_ulx = -18.65 & map_lrx = 25.85
+map_uly = 17.65 & map_lry = 5.35
 
 ;East Africa WRSI/Noah window
 ;map_ulx = 22.  & map_lrx = 51.35
 ;map_uly = 22.95  & map_lry = -11.75
 
 ;Southern Africa WRSI/Noah window
-;Southern Africa (37.85 S - 6.35 N; 6.05 E - 54.55 E) 
-;NX = 486, NY = 443
-map_ulx = 6.05  & map_lrx = 54.55
-map_uly = 6.35  & map_lry = -37.85
+;Southern Africa (37.85 S - 6.35 N; 6.05 E - 54.55 E)
+;;NX = 486, NY = 443
+;map_ulx = 6.05  & map_lrx = 54.55
+;map_uly = 6.35  & map_lry = -37.85
 
-;;;; VIC East africa domain ;;;;;
-;map_ulx = 21.875 & map_lrx = 51.125
-;map_uly = 23.125 & map_lry = -11.875
-
-res = 10. ;or 10. if its 0.1 degree, 4 or for 0.25 VIC
-
-ulx = (180.+map_ulx)*res  & lrx = (180.+map_lrx)*res-1
-uly = (50.-map_uly)*res   & lry = (50.-map_lry)*res-1
-NX = lrx - ulx + 2 
+ulx = (180.+map_ulx)*10.  & lrx = (180.+map_lrx)*10.-1
+uly = (50.-map_uly)*10.   & lry = (50.-map_lry)*10.-1
+NX = lrx - ulx + 2
 NY = lry - uly + 2
-
-;;;read in monthly data to compare to monthly SSEB;;;;;;
-;data_dir = '/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_EA/post/'
-data_dir = '/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_SA/post/'
-;data_dir = '/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_WA/post/'
-
-tic
-Evap = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
-;this loop reads in the selected months only
-for yr=startyr,endyr do begin &$
-  for i=0,nmos-1 do begin &$
-  y = yr &$
-  m = startmo + i &$
-  if m gt 12 then begin &$
-    m = m-12 &$
-    y = y+1 &$
-  endif &$
-  ;ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_C_WA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
-  ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_C_SA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
-  
-  ;variable of interest
-  VOI = 'Evap_tavg' &$ 
-  Qs = get_nc(VOI, ifile) &$
-  print, ifile, VOI &$
-  Evap[*,*,i,yr-startyr] = Qs &$
-      
-  endfor &$ 
-endfor
-toc
-;this is prob zero since other vals are already nan.
-Evap(where(Evap lt 0)) = 0
-
-;take the median for 2003-2013 (10yrs) for each month
-;for monthly (not seasonal) analysis
-medEVAP = MEDIAN(Evap[*,*,*,0:9], dimension=4) & help, medEVAP
-medEVAPcube = REBIN(medEVAP,NX, NY, NMOS, NYRS)
-
-;then compute percent of this median for all yrs...
-;PON = (ONDevap/MEDevapCUBE)*100
-PON = (Evap/MEDevapCUBE)*100
-PON(where(PON gt 250)) = 250
-
-month = ['jan', 'feb', 'mar','apr','may','jun','jul','aug','sep','oct','nov','dec']
 
 ;only use this shapefile when necessary so slow.
 ;shapefile = '/home/code/idl_user_contrib/GAUL_2013_2012_0.shapefiles/G2013_2012_0.shp'
@@ -96,18 +47,18 @@ month = ['jan', 'feb', 'mar','apr','may','jun','jul','aug','sep','oct','nov','de
 ;;WRSI and Noah landcover mask
 ;ifile = file_search('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/lis_input_wrsi.ea_oct2feb.nc')
 ;ifile = file_search('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/lis_input_wrsi.ea_may2nov.nc')
-ifile = file_search('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/lis_input_wrsi.sa.nc')
+;ifile = file_search('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/lis_input_wrsi.sa.nc')
 ;ifile = file_search('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/lis_input_wrsi.wa.nc')
 
-fileID = ncdf_open(ifile)
-VOI = 'WRSIMASK'
-wrsimask = get_nc(VOI, ifile)
-wrsimask(where(wrsimask eq 0))=!values.f_nan
+;fileID = ncdf_open(ifile)
+;VOI = 'WRSIMASK'
+;wrsimask = get_nc(VOI, ifile)
+;wrsimask(where(wrsimask eq 0))=!values.f_nan
 
 indir = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/Param_Noah3.3/'
 ;ifile = file_search(indir+'lis_input.MODISmode_ea.nc');lis_input_wa_elev.nc
-;ifile = file_search(indir+'lis_input_wa_elev_mode.nc'); 
-ifile = file_search(indir+'lis_input_sa_elev_mode.nc')
+ifile = file_search(indir+'lis_input_wa_elev_mode.nc'); 
+;ifile = file_search(indir+'lis_input_sa_elev_mode.nc')
 
 VOI = 'LANDCOVER'
 LC = get_nc(VOI, ifile)
@@ -149,12 +100,13 @@ ea_bot = abs(smap_lry-map_lry)/0.0083 & print, ea_bot
 ea_top = (map_uly-smap_lry)/0.0083 & print, ea_top
 
 ;check the west africa domain - this should be in separate script
-temp = image(ingrid[ea_left:ea_right,ea_bot:ea_top])
+;temp = image(ingrid[ea_left:ea_right,ea_bot:ea_top])
 
 startyr = 2003
 endyr = 2016
 help, ingrid[ea_left:ea_right,ea_bot:ea_top]
 delvar, ingrid
+nyrs = endyr-startyr+1
 
 ;ETA = bytarr(3537,4182,12,(endyr-startyr)+1)
 ;ETA = bytarr(294,348,12,(endyr-startyr)+1)
@@ -165,14 +117,29 @@ indir = '/discover/nobackup/projects/fame/Validation/SSEB/ETA_AFRICA/'
 ;NY = 348
 ETA = bytarr(NX,NY,12,(endyr-startyr)+1)
 ;openr,1,indir+'ETA_EA_294_348_12_14_byte.bin'
-;openr,1,indir+'ETA_WA_446_124_12_14_byte.bin'
-openr,1,indir+'ETA_SA_486_443_12_14_byte.bin'
+openr,1,indir+'ETA_WA_446_124_12_14_byte.bin'
+;openr,1,indir+'ETA_SA_486_443_12_14_byte.bin'
 readu,1,ETA
 close,1
 
-ETA=float(ETA)
-help, evap, eta, pon, evapmm
+help,  eta
+;;;;;read in NOAH ET from readin_chirps_noah_et.pro, only read in 2003-2016!
+help,  eta, evap
+;take the median for 2003-2013 (10yrs) for each month
+;for monthly (not seasonal) analysis
+medEVAP = MEDIAN(Evap[*,*,*,0:9], dimension=4) & help, medEVAP
+medEVAPcube = REBIN(medEVAP,NX, NY, NMOS, NYRS)
 
+;then compute percent of this median for all yrs...
+;PON = (ONDevap/MEDevapCUBE)*100
+PON = (Evap/MEDevapCUBE)*100
+PON(where(PON gt 250)) = 250
+
+month = ['jan', 'feb', 'mar','apr','may','jun','jul','aug','sep','oct','nov','dec']
+
+;ETA=float(ETA)
+
+res=10
 ;;;now I just want to plot the observations/PON side by side
 ;plot the Noah ET anomalies for a given month for all/one years.
 ncolors = 7
@@ -183,50 +150,52 @@ ct=colortable(73)
 ;w=window()
 TIC
 ;;;;buffer is a million times faster for this! don't print to screen!;;;;
- y=13
+;;;FIGURE FOR PAPER - DON"T MESS UP;;;;;;
+ y=n_elements(ETA[0,0,0,*])-1
  m=1 ;zero index 1=feb
 ;for y = 0,13 do begin &$
   tmptr = CONTOUR(ETA[*,*,m,y]*mask,FINDGEN(NX)/res+map_ulx, FINDGEN(NY)/res+map_lry, $
-  RGB_TABLE=ct, ASPECT_RATIO=1, Xstyle=1,Ystyle=1, layout=[2,1,2],/current,/buffer, $
+  RGB_TABLE=ct, ASPECT_RATIO=1, Xstyle=1,Ystyle=1, layout=[2,1,2], $
   /FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors)) &$
-
   ct[108:108+36,*] = 200  &$
   tmptr.rgb_table=ct  &$
-  tmptr.title = 'SSEBop ETA Feb'+ string(2003+y)  &$
+  ;tmptr.title = 'SSEBop ETA Feb'+ string(2003+y)  &$
   ; m1 = MAP('Geographic',limit=[map_lry+20,map_ulx+20,map_uly,map_lrx], /overplot) &$;
-  m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot) &$;
-
+  m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], horizon_thick=1)
   ;mycont = MAPCONTINENTS(shapefile, /COUNTRIES,HIRES=1, thick=2) &$
   m = MAPCONTINENTS(/COUNTRIES,  COLOR = 'black', THICK=1) &$
   tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
-  tmptr.mapgrid.FONT_SIZE = 0 &$
-  ; cb = colorbar(target=tmptr,ORIENTATION=1,TAPER=1,/BORDER, TITLE='ETa anomaly %')
+  tmptr.mapgrid.FONT_SIZE = 10 
+  tmptr.mapgrid.label_position = 0
+  m1.horizon_thick=1
+   ;cb = colorbar(target=tmptr,ORIENTATION=1,TAPER=1,/BORDER, TITLE='ETa anomaly %')
   ;tmptr.save,'/home/almcnall/test.png' &$
 ;endfor
 TOC
 ;position = x1,y1, x2, y2
-;cb = colorbar(target=tmptr,ORIENTATION=0,TAPER=1,/BORDER, TITLE='ETa anomaly %', position=[0.3,0.14,0.7,0.17])
-tmptr.save,'/home/almcnall/FEB_SSEB_ET.png'
+cb = colorbar(target=tmptr,ORIENTATION=0,TAPER=1,/BORDER, TITLE='ETa anomaly %', position=[0.3,0.14,0.7,0.17])
+tmptr.save,'/home/almcnall/FEB_SSEB_ETv2.png'
 
 
 ;monthly correlations
 ;these are kinda slow, only calc when needed
-tic
-cormap=fltarr(nx,ny,nmos,2)
-for x = 0, nx-1 do begin &$
-  for y = 0,ny-1 do begin &$
-    for m = 0, 12-1 do begin &$
-      noah = reform(pon[x,y,m,0:12],nyrs-1) &$
-      sseb = reform(eta[x,y,m,0:12],nyrs-1) &$
-      cormap[x,y,m,*] = r_correlate(noah,sseb) &$
-    endfor &$
-  endfor &$
-endfor
-toc
+;tic
+;cormap=fltarr(nx,ny,nmos,2)
+;for x = 0, nx-1 do begin &$
+;  for y = 0,ny-1 do begin &$
+;    for m = 0, 12-1 do begin &$
+;      noah = reform(pon[x,y,m,0:12],nyrs-1) &$
+;      sseb = reform(eta[x,y,m,0:12],nyrs-1) &$
+;      cormap[x,y,m,*] = r_correlate(noah,sseb) &$
+;    endfor &$
+;  endfor &$
+;endfor
+;toc
 
 noahTS = fltarr(nx,ny,nmos*(nyrs-1))
 ssebTS = fltarr(nx,ny,nmos*(nyrs-1))
 
+;this makes it look like i cropped it before.
 tic
 for x = 0, nx-1 do begin &$
   for y = 0,ny-1 do begin &$
@@ -235,18 +204,6 @@ for x = 0, nx-1 do begin &$
 endfor &$
 endfor
 toc
-
-;;;experiment with west africa, just show wet season per Pete's map July-Aug-Sept, ugh, not much better.
-;noahTS = fltarr(nx,ny,nyrs-1)
-;ssebTS = fltarr(nx,ny,nyrs-1)
-;tic
-;for x = 0, nx-1 do begin &$
-;  for y = 0,ny-1 do begin &$
-;  noahTS[x,y,*] = mean(pon[x,y,6:8,0:12],dimension=3,/nan) &$
-;  ssebTS[x,y,*] = mean(eta[x,y,6:8,0:12],dimension=3,/nan) &$
-;endfor &$
-;endfor
-;toc
 
 cormap2=fltarr(nx,ny)
 tic
@@ -257,48 +214,42 @@ endfor &$
 endfor
 toc
 
-wmaskcube = rebin(wrsimask,nx,ny,13*12)
-tzN = mean(mean(noahTS*wmaskcube, dimension=1, /nan),dimension=1,/nan)
-tzS = mean(mean(ssebTS*wmaskcube, dimension=1, /nan),dimension=1,/nan)
-
-;tzN = mean(mean(noahTS[gulx:glrx,glry:guly,*], dimension=1, /nan),dimension=1,/nan)
-;tzS = mean(mean(ssebTS[gulx:glrx,glry:guly,*], dimension=1, /nan),dimension=1,/nan)
-
-p1=plot(tzN)
-p1=plot(tzS, 'b', /overplot)
- print, correlate(tzN, tzS)
-
-for m = 0,11 do begin &$
-  p1 = image(cormap[*,*,m,0], layout=[4,3,m+1], rgb_table=20, min_value=0, max_value=0.8, /current, /buffer) &$
-  p1.save,'/home/almcnall/test.png' &$
-  if m eq 6 then c=colorbar() &$
-endfor
 
 ;how do i get the tickmarks in the right spot. And how about a boarder?
 ncolors = 5
 index = [-1,0.3,0.4,0.5,0.65]
 ;index = [-0.2,0,0.5,0.75,0.8]
+ncolors=5 ;10 for VIC v NOAH there is a funny hash pattern in VIC v Noah, maybe becasue of re-gridding
+p1 = image(cormap2, image_dimensions=[nx/10,ny/10], $
+  image_location=[map_ulx,map_lry],RGB_TABLE=64, /current, margin = 0.1)
+rgbind = FIX(FINDGEN(ncolors)*255./(ncolors-1))  &$  ; set the index of the colors to be pulled
+  rgbdump = p1.rgb_table & rgbdump = CONGRID(rgbdump[*,rgbind],3,256)  &$ ; just rewrites the discrete colorbar
+  rgbdump[*,255] = [255,255,255] &$ ; set map values of zero to white, you can change the color
+  rgbdump[*,0] = [255,255,255] &$;[190,190,190] &$
+  p1.rgb_table = rgbdump &$ ; reassign the colorbar to the image
+  p1.MAX_VALUE=0.9 &$
+  p1.min_value=-0.1 &$
+  m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot, horizon_thick=1)
+m1.mapgrid.linestyle = 'none' &$  ; could also use 6 here
+  m1.mapgrid.color = [255, 255, 255] &$ ;150
+  m = MAPCONTINENTS( /COUNTRIES,HIRES=1, THICK=2) &$
+  p1.title = txt[i] &$
+  p1.font_size=20 &$
+  cb = COLORBAR(target=p1,ORIENTATION=0,/BORDER_ON,font_size=24, position=[0.3,0.10,0.7,0.13])
 
-tmptr = CONTOUR(cormap2,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
-  ASPECT_RATIO=1, Xstyle=1,Ystyle=1, $
-  RGB_TABLE=64,/FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors), $
-  TITLE=' CORR PON (2003-2015)', /BUFFER)  &$
-  m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot) &$;
-  m = MAPCONTINENTS(/COUNTRIES,  COLOR = 'black', THICK=2) &$
-  ;mycont = MAPCONTINENTS(shapefile, /COUNTRIES,HIRES=1) &$
-  tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
-  tmptr.mapgrid.FONT_SIZE = 0 &$
-  cb = colorbar(target=tmptr,ORIENTATION=0, /BORDER,TAPER=0,THICK=0, TITLE='correlation')
-tmptr.save,'/home/almcnall/test.png'
-close
-
-w=window()
-for m = 0,11 do begin &$
-  temp = image(cormap[*,*,m,0], layout=[4,3,m+1], rgb_table = 20, min_value=0, max_value=0.8, /current) &$
-  print, m &$
-endfor
-
-temp= image(mean(cormap[*,*,*,0], dimension=3,/nan), rgb_table=20, min_value=-0.6, max_value=0.6)
+;tmptr = contour(cormap2,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
+;  ASPECT_RATIO=1, Xstyle=1,Ystyle=1, rgb_table=64,image_location=[sa_ulx,sa_lry]$
+;  RGB_TABLE=64, TITLE=' CORR PON (2003-2015)')  &$
+;  m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot) &$;
+;  m = MAPCONTINENTS(/COUNTRIES,  COLOR = 'black', THICK=2) &$
+;  ;mycont = MAPCONTINENTS(shapefile, /COUNTRIES,HIRES=1) &$
+;  tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
+;  tmptr.mapgrid.FONT_SIZE = 10 &$
+;  tmptr.mapgrid.label_position = 0
+;  m1.horizon_thick=1
+;  cb = colorbar(target=tmptr,ORIENTATION=0, /BORDER,TAPER=0,THICK=0, TITLE='correlation')
+;tmptr.save,'/home/almcnall/test.png'
+;close
 
 ;; PON values and difference maps;
 ;yemen zoom

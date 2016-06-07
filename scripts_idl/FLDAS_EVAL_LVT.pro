@@ -5,6 +5,7 @@ pro FLDAS_EVAL_LVT
 ;3/3/2016 update mv to discover
 ;5/2/2016 add mask and some other stuff to plots.
 ;5/5/2016 continuing mask effort after LDT issues.
+;06/06/2016 revist to fix up figures for the paper. 
 
 ;indir = '/home/sandbox/people/mcnally/FLDAS_EVAL/'
 indir = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/LVT_test/'
