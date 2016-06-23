@@ -7,77 +7,39 @@ pro LVT_SMpercentiles
 ; 10/9/15 compute drought severity index for ethiopia region of interest. 
 ; 12/9/15 update for AGU
 ; 01/7/15 update for southen africa
+; 06/12/16 plot for data sci paper. 
 
-;  NX = 294
-;  NY = 348
+.compile /home/almcnall/Scripts/scripts_idl/get_nc.pro
+.compile /home/almcnall/Scripts/scripts_idl/nve.pro
+;.compile /home/almcnall/Scripts/scripts_idl/mve.pro
+.compile /home/almcnall/Scripts/scripts_idl/get_domain01.pro
 
-;East Africa WRSI/Noah window
-;map_ulx = 22.  & map_lrx = 51.35
-;map_uly = 22.95  & map_lry = -11.75
-
-;Southern Africa WRSI/Noah window
-;Southern Africa (37.85 S - 6.35 N; 6.05 E - 54.55 E)
-;NX = 486, NY = 443
-map_ulx = 6.05  & map_lrx = 54.55
-map_uly = 6.35  & map_lry = -37.85
-
-;  data_dir = '/home/sandbox/people/mcnally/LVT_percentiles/EA_percentiles/'
-;  ;get the NX NY from the netcdf file
-;  fileID = ncdf_open(data_dir+'Percentile_TS.201401010000.d01.nc', /nowrite) &$
-;  SoilID = ncdf_varid(fileID,'SoilMoist_from_SoilMoist_v_SoilMoist_ds1') &$
-;  ncdf_varget,fileID, SoilID, SM01
-;  dims = size(SM01, /dimensions)
-;  NX = dims[0]
-;  NY = dims[1]
-
-data_dir = '/home/ftp_out/people/mcnally/FLDAS/FLDAS4DISC/NOAH_CHIRPSv2.001_MERRA_SA/';FLDAS_NOAH01_B_SA_M.A201507.001.nc
-;data_dir = '/home/ftp_out/people/mcnally/FLDAS/FLDAS4DISC/NOAH_RFE2_GDAS_SA/';FLDAS_NOAH01_B_SA_M.A201507.001.nc
-
-;data_dir = '/home/ftp_out/people/mcnally/FLDAS/FLDAS4DISC/NOAH_CHIRPSv2.001_MERRA_EA/';FLDAS_NOAH01_B_SA_M.A201507.001.nc
-;fileID = ncdf_open(data_dir+STRING('FLDAS_NOAH01_B_EA_M.A200101.001.nc'), /nowrite)
-fileID = ncdf_open(data_dir+STRING('FLDAS_NOAH01_B_SA_M.A200101.001.nc'), /nowrite)
-;fileID = ncdf_open(data_dir+STRING('FLDAS_NOAH01_A_SA_M.A200101.001.nc'), /nowrite)
+help, SMP ;from readin_chirps_noah_sm.pro
+SM = SMP
 
 
-;get the NX NY from the netcdf file
-qsID = ncdf_varid(fileID,'SM01_Percentile') &$ ;
-  ncdf_varget,fileID, qsID, SMP &$
-  dims = size(SMP, /dimensions)
-NX = dims[0]
-NY = dims[1]
+indir = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/Param_Noah3.3/'
+;ifile = file_search(indir+'lis_input.MODISmode_ea.nc');lis_input_wa_elev.nc
+;ifile = file_search(indir+'lis_input_wa_elev_mode.nc');
+ifile = file_search(indir+'lis_input_sa_elev_mode.nc')
+
+VOI = 'LANDCOVER'
+LC = get_nc(VOI, ifile)
+bare = where(LC[*,*,15] eq 1, complement=other)
+water = where(LC[*,*,16] eq 1, complement=other)
+
+mask = fltarr(NX,NY)+1.0
+mask(bare)=!values.f_nan
+mask(water)=!values.f_nan
+
+ifile = file_search('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/lis_input_wrsi.sa.nc')
+
+fileID = ncdf_open(ifile)
+qsID = ncdf_varid(fileID,'WRSIMASK'); WHC
+ncdf_varget,fileID, qsID, landmask
 NCDF_close, fileID
-
-  ;read in percentiles from LVT
-  startyr = 1982
-  endyr = 2015
-  nyrs = endyr-startyr+1
-
-  ;these percentiles are 0-100
-  startmo = 1
-  endmo = 12
-  nmos = endmo - startmo+1
-  SM = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
-  ;this loop reads in the selected months only
-  for yr=startyr,endyr do begin &$
-    for i=0,nmos-1 do begin &$
-    y = yr &$
-    m = startmo + i &$
-    if m gt 12 then begin &$
-    m = m-12 &$
-    y = y+1 &$
-  endif &$
-  fileID = ncdf_open(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_B_SA_M.A'',I4.4,I2.2,''.001.nc'')',y,m), /nowrite) &$; 200101.001.nc'), /nowrite)
-  ;fileID = ncdf_open(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_A_SA_M.A'',I4.4,I2.2,''.001.nc'')',y,m), /nowrite) &$; 200101.001.nc'), /nowrite)
-
-  ;fileID = ncdf_open(data_dir+STRING(FORMAT='(''Percentile_TS.'',I4.4,I2.2,''010000.d01.nc'')',y,m), /nowrite) &$
-  ;SoilID = ncdf_varid(fileID,'SoilMoist_from_SoilMoist_v_SoilMoist_ds1') &$
-  SoilID = ncdf_varid(fileID,'SM01_Percentile') &$
-  ncdf_varget,fileID, SoilID, SM01 &$
-  SM[*,*,i,yr-startyr] = SM01 &$
-  NCDF_close, fileID &$
-endfor &$
-endfor
-sm(where(sm lt 0))   = !values.f_nan ;CHIRPS MERRA
+landmask(where(landmask gt 0))=1
+landmask(where(landmask eq 0))=!values.f_nan
 
 ;for each month in the time series classify these using the USDM scheme
 ;from US drought monitor (0-2 = exceptional D4=5; 3-5 = extreme D3=4); 6-10=severe D2=[3];
@@ -88,54 +50,38 @@ sm(where(sm lt 0))   = !values.f_nan ;CHIRPS MERRA
   npc(where(sm gt 0.05 AND sm le 0.10)) = 3 &$
   npc(where(sm gt 0.10 AND sm le 0.20)) = 2 &$
   npc(where(sm gt 0.21 AND sm le 0.30)) = 1 &$
-  npc(where(sm gt 0.3))  = 0
+  npc(where(sm gt 0.30 AND sm le 0.67)) = 0
+  npc(where(sm gt 0.67) = -1
 
 ;shapefile = '/home/code/idl_user_contrib/GAUL_2013_2012_0.shapefiles/G2013_2012_0.shp'
-ncolors = 6
 CLASS = [' > normal ', 'abnormally dry', 'moderate drought', 'severe drought', 'extreme drought', 'exceptional drought']
 month = ['jan','feb','mar','apr','may','jun','jul','aug']
-;1368X768
-cnt=1
-w = WINDOW(WINDOW_TITLE='SM percentile-drought classes',DIMENSIONS=[900,700])
-for YOI = 1984,2015 do begin &$
-  ;show 1984, 2002, 2015
-  YOI=2015
-  mo = 11 &$
-;for mo=9,10 do begin &$
-  ;for YOI = 1981,2013 do begin &$
-  ;w = WINDOW(WINDOW_TITLE=string(YOI),DIMENSIONS=[700,700]) &$
-  p1 = image(CONGRID(npc[*,*,mo,YOI-startyr],NX*1.8,NY*18),RGB_TABLE=65,FONT_SIZE=14, $
-  AXIS_STYLE=0,MAP_PROJECTION='Geographic',LIMIT=[map_lry,map_ulx,map_uly,map_lrx], $
-  IMAGE_DIMENSIONS=[map_lrx-map_ulx,map_uly-map_lry],IMAGE_LOCATION=[map_ulx,map_lry], /current, layout = [2,1,2], margin=[0.1,0.1,0.1,0.1])  &$
-
-  rgbind = FIX(FINDGEN(ncolors)*255./(ncolors-1))  &$  ; set the index of the colors to be pulled
-  rgbdump = p1.rgb_table & rgbdump = CONGRID(rgbdump[*,rgbind],3,256)  &$ ; just rewrites the discrete colorbar
-  rgbdump[*,0] = [200,200,200] &$
-  p1.rgb_table = rgbdump &$
-  p1.title = 'Dec 2015' &$
-  p1.mapgrid.linestyle = 6 &$
-  p1.mapgrid.label_position = 0 &$
-  p1.mapgrid.FONT_SIZE = 0 &$
-  p1.min_value=-0.5 &$
-  p1.max_value=5.5 &$
-  ;mycont = MAPCONTINENTS(shapefile, /COUNTRIES,HIRES=1) &$
-  m = MAPCONTINENTS(/COUNTRIES,  COLOR = 'black') &$  
-  cnt++ &$
-  ;p1.save,strcompress('/home/sandbox/people/mcnally/figs4kyle/EA_SMpercentile.Mar,Sep_'+string(YOI)+'_.jpg', /remove_all),RESOLUTION=200 &$
-endfor  &$
- ; cb = colorbar(target=p1,ORIENTATION=1,FONT_SIZE=14, POSITION=[0.14,0.3,0.16,0.6]) &$
-  cb = colorbar(target=p1,ORIENTATION=1,FONT_SIZE=14) &$
-  cb.tickvalues = [0,1,2,3,4,5] &$
+res=10
+ncolors = n_elements(class)
+index = [-0.5,0,1,2,3,4,5];
+ct=colortable(65)
+;w=window()
+TIC
+;;;;buffer is a million times faster for this! don't print to screen!;;;;
+;;;FIGURE FOR PAPER - DON"T MESS UP;;;;;;
+y=n_elements(NPC[0,0,0,*])-1
+m=1 ;zero index 1=feb
+tmptr = CONTOUR(NPC[*,*,m,y]*landmask,FINDGEN(NX)/res+map_ulx, FINDGEN(NY)/res+map_lry, $
+  RGB_TABLE=ct, ASPECT_RATIO=1, Xstyle=1,Ystyle=1, /BUFFER, $
+  /FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors), dimensions=[NX*1.5, NY]) &$
+  m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], horizon_thick=1, /overplot)
+  m = MAPCONTINENTS(/COUNTRIES,  COLOR = 'black', THICK=1) &$
+  tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
+  tmptr.mapgrid.FONT_SIZE = 0
+tmptr.mapgrid.label_position = 0
+cb = colorbar(target=tmptr,ORIENTATION=1,TAPER=0,/BORDER, POSITION=[0.78,0.25,0.80,0.75])
+cb.tickvalues = [0,1,2,3,4,5] &$
   cb.tickname = CLASS &$
+  cb.font_size=10
   cb.minor=0
-  cb.TEXT_ORIENTATION=25
-
-;for multipannel plot
-;   cb = colorbar(target=p1,ORIENTATION=0,FONT_SIZE=12, POSITION=[0.22,0.05,0.29,0.9]) &$
-;   cb.tickvalues = [0,1,2,3,4]+0.5 &$
-;   cb.tickname = CLASS &$
-;   cb.minor=0 &$
-endfor
+  cb.TEXTPOS=1
+tmptr.save,'/home/almcnall/figs4SciData/SM_percentiles.png' &$
+TOC
 
 ;;;;;;compute the drought severity index;;;;;;;;;;
 npcvect = reform(npc,nx,ny,12*nyrs);was 34

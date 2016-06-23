@@ -8,6 +8,8 @@
 ; 6/06/16 pull out the read-in like i did for the runoff 
 
 .compile /home/almcnall/Scripts/scripts_idl/get_nc.pro
+.compile /home/almcnall/Scripts/scripts_idl/get_domain01.pro
+
 ;.compile /home/almcnall/Scripts/scripts_idl/nve.pro
 ;.compile /home/almcnall/Scripts/scripts_idl/mve.pro
 ;.compile /home/source/mcnally/scripts_idl/get_nc.pro
@@ -21,44 +23,20 @@ startmo = 1
 endmo = 12
 nmos = endmo - startmo+1
 
-;West Africa (5.35 N - 17.65 N; 18.65 W - 25.85 E)
-; west africa domain
-map_ulx = -18.65 & map_lrx = 25.85
-map_uly = 17.65 & map_lry = 5.35
+;; params = [NX, NY, map_ulx, map_lrx, map_uly, map_lry]
+params = get_domain01('SA')
 
-;East Africa WRSI/Noah window
-;map_ulx = 22.  & map_lrx = 51.35
-;map_uly = 22.95  & map_lry = -11.75
-
-;Southern Africa WRSI/Noah window
-;Southern Africa (37.85 S - 6.35 N; 6.05 E - 54.55 E)
-;;NX = 486, NY = 443
-;map_ulx = 6.05  & map_lrx = 54.55
-;map_uly = 6.35  & map_lry = -37.85
-
-ulx = (180.+map_ulx)*10.  & lrx = (180.+map_lrx)*10.-1
-uly = (50.-map_uly)*10.   & lry = (50.-map_lry)*10.-1
-NX = lrx - ulx + 2
-NY = lry - uly + 2
-
-;only use this shapefile when necessary so slow.
-;shapefile = '/home/code/idl_user_contrib/GAUL_2013_2012_0.shapefiles/G2013_2012_0.shp'
-
-;;WRSI and Noah landcover mask
-;ifile = file_search('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/lis_input_wrsi.ea_oct2feb.nc')
-;ifile = file_search('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/lis_input_wrsi.ea_may2nov.nc')
-;ifile = file_search('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/lis_input_wrsi.sa.nc')
-;ifile = file_search('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/lis_input_wrsi.wa.nc')
-
-;fileID = ncdf_open(ifile)
-;VOI = 'WRSIMASK'
-;wrsimask = get_nc(VOI, ifile)
-;wrsimask(where(wrsimask eq 0))=!values.f_nan
+NX = params[0]
+NY = params[1]
+map_ulx = params[2]
+map_lrx = params[3]
+map_uly = params[4]
+map_lry = params[5]
 
 indir = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/Param_Noah3.3/'
 ;ifile = file_search(indir+'lis_input.MODISmode_ea.nc');lis_input_wa_elev.nc
-ifile = file_search(indir+'lis_input_wa_elev_mode.nc'); 
-;ifile = file_search(indir+'lis_input_sa_elev_mode.nc')
+;ifile = file_search(indir+'lis_input_wa_elev_mode.nc'); 
+ifile = file_search(indir+'lis_input_sa_elev_mode.nc')
 
 VOI = 'LANDCOVER'
 LC = get_nc(VOI, ifile)
@@ -70,7 +48,8 @@ mask(bare)=!values.f_nan
 mask(water)=!values.f_nan
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;try reading in the SSEB data for east africa
+;;READ IN the SSEB data for east africa
+
 ;;first read one in to get the domain info for upper left x and y.
 indir = '/discover/nobackup/projects/fame/Validation/SSEB/ETA_AFRICA/'
 ifile = file_search(strcompress(indir+'/ma0401.modisSSEBopET.tif',/remove_all))
@@ -89,17 +68,12 @@ sNY = lry - uly
 print, nx, ny
 help, ingrid
 
-;;;;;;;East Africa WRSI/Noah window
-;map_ulx = 22.  & map_lrx = 51.35
-;map_uly = 22.95  & map_lry = -11.75
-
 ;;;;;;;clip continental africa to east/west africa domain;;;;;;
 ea_left = (map_ulx-smap_ulx)/0.0083 & print, ea_left
 ea_right = (map_lrx-smap_ulx)/0.0083 & print, ea_right
 ea_bot = abs(smap_lry-map_lry)/0.0083 & print, ea_bot
 ea_top = (map_uly-smap_lry)/0.0083 & print, ea_top
 
-;check the west africa domain - this should be in separate script
 ;temp = image(ingrid[ea_left:ea_right,ea_bot:ea_top])
 
 startyr = 2003
@@ -117,8 +91,8 @@ indir = '/discover/nobackup/projects/fame/Validation/SSEB/ETA_AFRICA/'
 ;NY = 348
 ETA = bytarr(NX,NY,12,(endyr-startyr)+1)
 ;openr,1,indir+'ETA_EA_294_348_12_14_byte.bin'
-openr,1,indir+'ETA_WA_446_124_12_14_byte.bin'
-;openr,1,indir+'ETA_SA_486_443_12_14_byte.bin'
+;openr,1,indir+'ETA_WA_446_124_12_14_byte.bin'
+openr,1,indir+'ETA_SA_486_443_12_14_byte.bin'
 readu,1,ETA
 close,1
 
@@ -145,7 +119,6 @@ res=10
 ncolors = 7
 ;RGB_INDICES=[0,50,70,90,110,130,150]
 index = [0,50,70,90,110,130,150];
-;w = WINDOW(DIMENSIONS=[700,900])
 ct=colortable(73)
 ;w=window()
 TIC
@@ -154,26 +127,25 @@ TIC
  y=n_elements(ETA[0,0,0,*])-1
  m=1 ;zero index 1=feb
 ;for y = 0,13 do begin &$
-  tmptr = CONTOUR(ETA[*,*,m,y]*mask,FINDGEN(NX)/res+map_ulx, FINDGEN(NY)/res+map_lry, $
-  RGB_TABLE=ct, ASPECT_RATIO=1, Xstyle=1,Ystyle=1, layout=[2,1,2], $
+  tmptr = CONTOUR(PON[*,*,m,y]*mask,FINDGEN(NX)/res+map_ulx, FINDGEN(NY)/res+map_lry, $
+  RGB_TABLE=ct, ASPECT_RATIO=1, Xstyle=1,Ystyle=1, $
   /FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors)) &$
   ct[108:108+36,*] = 200  &$
   tmptr.rgb_table=ct  &$
-  ;tmptr.title = 'SSEBop ETA Feb'+ string(2003+y)  &$
+  ;tmptr.title = 'SSEBop ETA Feb'  &$
   ; m1 = MAP('Geographic',limit=[map_lry+20,map_ulx+20,map_uly,map_lrx], /overplot) &$;
-  m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], horizon_thick=1)
-  ;mycont = MAPCONTINENTS(shapefile, /COUNTRIES,HIRES=1, thick=2) &$
+  m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], horizon_thick=1, /overplot)
+ ; mycont = MAPCONTINENTS(shapefile, /COUNTRIES,HIRES=1, thick=2) &$
   m = MAPCONTINENTS(/COUNTRIES,  COLOR = 'black', THICK=1) &$
   tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
   tmptr.mapgrid.FONT_SIZE = 10 
   tmptr.mapgrid.label_position = 0
-  m1.horizon_thick=1
-   ;cb = colorbar(target=tmptr,ORIENTATION=1,TAPER=1,/BORDER, TITLE='ETa anomaly %')
+   cb = colorbar(target=tmptr,ORIENTATION=1,TAPER=1,/BORDER, TITLE='ETa anomaly %')
   ;tmptr.save,'/home/almcnall/test.png' &$
 ;endfor
 TOC
 ;position = x1,y1, x2, y2
-cb = colorbar(target=tmptr,ORIENTATION=0,TAPER=1,/BORDER, TITLE='ETa anomaly %', position=[0.3,0.14,0.7,0.17])
+cb = colorbar(target=tmptr,ORIENTATION=1,TAPER=1,/BORDER, TITLE='ETa anomaly %', position=[0.3,0.14,0.7,0.17])
 tmptr.save,'/home/almcnall/FEB_SSEB_ETv2.png'
 
 
@@ -216,40 +188,55 @@ toc
 
 
 ;how do i get the tickmarks in the right spot. And how about a boarder?
-ncolors = 5
-index = [-1,0.3,0.4,0.5,0.65]
-;index = [-0.2,0,0.5,0.75,0.8]
-ncolors=5 ;10 for VIC v NOAH there is a funny hash pattern in VIC v Noah, maybe becasue of re-gridding
-p1 = image(cormap2, image_dimensions=[nx/10,ny/10], $
-  image_location=[map_ulx,map_lry],RGB_TABLE=64, /current, margin = 0.1)
-rgbind = FIX(FINDGEN(ncolors)*255./(ncolors-1))  &$  ; set the index of the colors to be pulled
-  rgbdump = p1.rgb_table & rgbdump = CONGRID(rgbdump[*,rgbind],3,256)  &$ ; just rewrites the discrete colorbar
-  rgbdump[*,255] = [255,255,255] &$ ; set map values of zero to white, you can change the color
-  rgbdump[*,0] = [255,255,255] &$;[190,190,190] &$
-  p1.rgb_table = rgbdump &$ ; reassign the colorbar to the image
-  p1.MAX_VALUE=0.9 &$
-  p1.min_value=-0.1 &$
-  m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot, horizon_thick=1)
-m1.mapgrid.linestyle = 'none' &$  ; could also use 6 here
-  m1.mapgrid.color = [255, 255, 255] &$ ;150
-  m = MAPCONTINENTS( /COUNTRIES,HIRES=1, THICK=2) &$
-  p1.title = txt[i] &$
-  p1.font_size=20 &$
-  cb = COLORBAR(target=p1,ORIENTATION=0,/BORDER_ON,font_size=24, position=[0.3,0.10,0.7,0.13])
+;ncolors = 5
+;index = [-1,0.3,0.4,0.5,0.65]
+;;index = [-0.2,0,0.5,0.75,0.8]
+;ncolors=5 ;10 for VIC v NOAH there is a funny hash pattern in VIC v Noah, maybe becasue of re-gridding
+;p1 = image(cormap2, image_dimensions=[nx/10,ny/10], $
+;  image_location=[map_ulx,map_lry],RGB_TABLE=64, /current, margin = 0.1)
+;rgbind = FIX(FINDGEN(ncolors)*255./(ncolors-1))  &$  ; set the index of the colors to be pulled
+;  rgbdump = p1.rgb_table & rgbdump = CONGRID(rgbdump[*,rgbind],3,256)  &$ ; just rewrites the discrete colorbar
+;  rgbdump[*,255] = [255,255,255] &$ ; set map values of zero to white, you can change the color
+;  rgbdump[*,0] = [255,255,255] &$;[190,190,190] &$
+;  p1.rgb_table = rgbdump &$ ; reassign the colorbar to the image
+;  p1.MAX_VALUE=0.9 &$
+;  p1.min_value=-0.1 &$
+;  m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot, horizon_thick=1)
+;m1.mapgrid.linestyle = 'none' &$  ; could also use 6 here
+;  m1.mapgrid.color = [255, 255, 255] &$ ;150
+;  m = MAPCONTINENTS( /COUNTRIES,HIRES=1, THICK=2) &$
+;  p1.title = txt[i] &$
+;  p1.font_size=20 &$
+;  cb = COLORBAR(target=p1,ORIENTATION=0,/BORDER_ON,font_size=24, position=[0.3,0.10,0.7,0.13])
 
-;tmptr = contour(cormap2,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
-;  ASPECT_RATIO=1, Xstyle=1,Ystyle=1, rgb_table=64,image_location=[sa_ulx,sa_lry]$
-;  RGB_TABLE=64, TITLE=' CORR PON (2003-2015)')  &$
-;  m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot) &$;
-;  m = MAPCONTINENTS(/COUNTRIES,  COLOR = 'black', THICK=2) &$
-;  ;mycont = MAPCONTINENTS(shapefile, /COUNTRIES,HIRES=1) &$
-;  tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
-;  tmptr.mapgrid.FONT_SIZE = 10 &$
-;  tmptr.mapgrid.label_position = 0
-;  m1.horizon_thick=1
-;  cb = colorbar(target=tmptr,ORIENTATION=0, /BORDER,TAPER=0,THICK=0, TITLE='correlation')
-;tmptr.save,'/home/almcnall/test.png'
-;close
+;;;STICK with CONTOUR;;;;;;;
+;index = [-0.1,0,0.3,0.4,0.5,0.6,0.7,0.8, 0.9]
+shapefile ='/discover/nobackup/almcnall/G2013_2012_0.shp' 
+index = [-0.1,0,0.3,0.5,0.7,0.9]
+
+ncolors = n_elements(index) ;is this right or do i add some?
+;index = [-1,0.4,0.5,0.6,0.7,0.8]
+tmptr = CONTOUR(cormap2,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
+  ASPECT_RATIO=1, Xstyle=1,Ystyle=1, $
+  RGB_TABLE=64,/FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors))  &$
+  m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot,horizon_thick=1) &$;
+   mycont = MAPCONTINENTS(/COUNTRIES, thick=1) &$
+  ;why doesn't this work??
+  ;m = MAPCONTINENTS(/COUNTRIES, COLOR = 'black',THICK=1) &$
+  tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
+  tmptr.mapgrid.label_position = 0  &$
+  tmptr.mapgrid.FONT_SIZE = 10 &$
+  ;[X1, Y1, X2, Y2]
+  cb = colorbar(target=tmptr,ORIENTATION=0, /BORDER,TAPER=1,THICK=0, TITLE='correlation', position=[0.3,0.2,0.7,0.24], font_size=10)
+  ;cb = colorbar(target=tmptr,ORIENTATION=1, /BORDER,TAPER=1,THICK=0, TITLE='correlation', font_size=10)
+
+tmptr.save,'/home/almcnall/figs4SciData/SM_CCI_ACORR_SA.png'
+close
+
+
+
+
+
 
 ;; PON values and difference maps;
 ;yemen zoom

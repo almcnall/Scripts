@@ -17,7 +17,7 @@
 ;.compile /home/source/mcnally/scripts_idl/get_nc.pro
 
 ;;USE readin_RFE_NOAH_Qs or readin_CHIRPS_NOAH_Qs
-help, RO_RFE01, RO_CHIRPS01
+help,RO_CHIRPS01 ;,\, RO_RFE01, 
 
 ;;;;Plot population;;;;;;;
 indir = '/discover/nobackup/almcnall/Africa-POP/'
@@ -52,28 +52,28 @@ landmask(where(landmask eq 0))=!values.f_nan
 ; This is where rainfall and model bias makes things interesting.
 help, RO_RFE01, RO_CHIRPS01
 
-pop12 = rebin(pop,NX,NY,nmos) & help, pop12
+;pop12 = rebin(pop,NX,NY,nmos) & help, pop12
 
-popcube82  = rebin(pop,NX,NY,nmos,n_elements(ro_chirps01[0,0,0,*])) & help, popcube82
-popcube01  = rebin(pop,NX,NY,nmos,n_elements(ro_rfe01[0,0,0,*])) & help, popcube01
+;popcube82  = rebin(pop,NX,NY,nmos,n_elements(ro_chirps01[0,0,0,*])) & help, popcube82
+;popcube01  = rebin(pop,NX,NY,nmos,n_elements(ro_rfe01[0,0,0,*])) & help, popcube01
 
-popmaskcube82 = rebin(popmask,NX,NY,nmos,n_elements(ro_chirps01[0,0,0,*])) & help, popmaskcube82
-popmaskcube01 = rebin(popmask,NX,NY,nmos,n_elements(ro_rfe01[0,0,0,*])) & help, popmaskcube01
+;popmaskcube82 = rebin(popmask,NX,NY,nmos,n_elements(ro_chirps01[0,0,0,*])) & help, popmaskcube82
+;popmaskcube01 = rebin(popmask,NX,NY,nmos,n_elements(ro_rfe01[0,0,0,*])) & help, popmaskcube01
 
 ;how much runoff is there every month?
-help, ROmm
+;help, ROmm
 ;how much RO per person per month? I guess multiplying by 1000 gets us from mm to m3?
 
-CMPPcube01 = (RO_RFE01/popcube01)     & help, CMPPcube01
+;CMPPcube01 = (RO_RFE01/popcube01)     & help, CMPPcube01
 CMPPcube82 = (RO_CHIRPS01/popcube82)     & help, CMPPcube82
 ;prob need some cap
 ;CMPPcube(where(CMPPcube gt 8973))= 8973
 
 ;what is the average monthly (multi-month?) CMPP - Wada used e.g. JFM, AMJ, JAS, OND
-monRO = mean(ROmm,dimension=4,/nan) & help, monRO
+monRO = mean(RO_CHIRPS01,dimension=4,/nan) & help, monRO
 
 ;monCMPP  = (monRO/pop12)*1000      & help, monCMPP
-monCMPP  = (monRO/pop12)      & help, monCMPP
+;monCMPP  = (monRO/pop12)      & help, monCMPP
 
 month = ['jan', 'feb', 'mar','apr','may','jun','jul','aug','sep','oct','nov','dec']
 CLASS = ['absolute scarcity ', 'scarcity', 'stress', 'no stress']
@@ -177,20 +177,21 @@ countmap = monCMPP[*,*,*]*!values.f_nan
  ;We can assime that they are supposed to get their moisture in JAS
  ;percent normal, percentile map, i still think soil moisture is better for multi-yr but maybe SRI-18, or the DSI.
  
- ;1. percent of normal. How do I cap the huge events? Stdev mask - will have to think about this one more..
+ ;;;;FOR the paper and C. Hillbruner;;;;;;;;;;;;;;;;
+ ;;;;;;;;;;1. percent of normal. How do I cap the huge events? Stdev mask - will have to think about this one more..
  
  CMPPanom = ROmm*!values.f_nan
- ROanom = ROmm*!values.f_nan
+ ROanom = RO_CHIRPS01*!values.f_nan
 
  ;CMPPstd = ROmm*!values.f_nan
 ;CMPPcube(where(CMPPcube gt 8973))= 8973
 ;CMPPmon(where(CMPPmon gt 8973))= 8973
-print, max(cmppcube(where(finite(cmppcube))));yeah - CMPP gets larger ..when it should get smaller...
+;print, max(cmppcube(where(finite(cmppcube))));yeah - CMPP gets larger ..when it should get smaller...
  
  for y = 0,nyrs-1 do begin &$
    for m = 0,11 do begin &$
-     CMPPanom[*,*,m,y] = CMPPcube[*,*,m,y]/monCMPP[*,*,m] &$
-     ROanom[*,*,m,y] = RO[*,*,m,y]/monRO[*,*,m] &$
+     ;CMPPanom[*,*,m,y] = CMPPcube[*,*,m,y]/monCMPP[*,*,m] &$
+     ROanom[*,*,m,y] = RO_CHIRPS01[*,*,m,y]/monRO[*,*,m] &$
    endfor &$
  endfor
  
@@ -200,38 +201,50 @@ print, max(cmppcube(where(finite(cmppcube))));yeah - CMPP gets larger ..when it 
  eNX = dims[0]
  eNY = dims[1]
   
- ncolors=4
- RGB_INDICES=[0,25,50,85,125]
- index = [0,25,50,85,125]
- ct=colortable(72,/reverse)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;change the colorbar for the paper;;;;;;;;;;
+ index = [0,50,70,90,110,130,150];
+ ;index = [0,25,50,75,90,110,125,150];
+ ct=colortable(72)
+ RGB_INDICES=index
+ ;index = [0,25,50,85,125]
+ ncolors=n_elements(index)
+ ;ct=colortable(72,/reverse)
  
  ;put a cap on percent of normal before writing out.
- CMPPanom(where(CMPPanom gt 2.5))=2.5
+ ;CMPPanom(where(CMPPanom gt 2.5))=2.5
  ROanom(where(ROanom gt 2.5))=2.5
 
  ;apply the pop mask before writing out.
- CMPPout = CMPPanom*popmaskcube
+ ;CMPPout = CMPPanom*popmaskcube
  ;ETHout = CMPPout[100:NX-1,150:NY-1,*,*]*100 & help, EthOUT
 
  ;w = WINDOW(DIMENSIONS=[900,700])
  ;tmptr = CONTOUR(nmos*popmask,FINDGEN(NX)/10. + map_ulx, FINDGEN(NY)/10. + map_lry, $
  ;tmptr = CONTOUR(EthPON[*,*,7,nyrs-2]*100*Ethpop,FINDGEN(eNX)/10. + map_ulx+10, FINDGEN(eNY)/10. + map_lry+15, RGB_TABLE=ct,$
- tmptr = CONTOUR(CMPPanom[*,*,10,nyrs-2]*100*popmask,FINDGEN(NX)/10. + map_ulx, FINDGEN(NY)/10. + map_lry, RGB_TABLE=ct,$
-   /FILL, ASPECT_RATIO=1, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors), layout=[1,1,1],$
-   TITLE='Nov percent of normal water availability', MAP_PROJECTION='geographic',Xstyle=1,Ystyle=1, /BUFFER)  &$
+ tmptr = CONTOUR(ROanom[*,*,3,nyrs-1]*100,FINDGEN(NX)/10. + map_ulx, FINDGEN(NY)/10. + map_lry, RGB_TABLE=ct,$
+   /FILL, ASPECT_RATIO=1, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors),$
+    MAP_PROJECTION='geographic',Xstyle=1,Ystyle=1, dimensions=[NX*1.5, NY], /BUFFER)  &$
    tmptr.rgb_table = reverse(tmptr.rgb_table,2)
- tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
+   ct[108:108+36,*] = 200  &$
+   tmptr.rgb_table=ct
+   tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
    tmptr.mapgrid.FONT_SIZE = 0 &$
-   ;m1 = MAP('Geographic',limit=[map_lry+15,map_ulx+10,map_uly,map_lrx], /overplot) &$;
    m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot) &$;
   ; mycont = MAPCONTINENTS(shapefile, /COUNTRIES,HIRES=1) &$
    m = MAPCONTINENTS(/COUNTRIES,  COLOR = 'black', THICK=2) &$
-   cb = colorbar(target=tmptr,ORIENTATION=0,TAPER=1,/BORDER, TITLE='precent of normal', position=[0.3,0.07,0.7,0.11])
+   m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], horizon_thick=1,/overplot)
+   tmptr.mapgrid.linestyle = 'none'
+   tmptr.mapgrid.FONT_SIZE = 0
+   cb = colorbar(target=tmptr,ORIENTATION=1,TAPER=1,/BORDER, POSITION=[0.78,0.25,0.80,0.75])
+   cb.TEXTPOS=1
+   cb.font_size=10
+   
+   ;cb = colorbar(target=tmptr,ORIENTATION=0,TAPER=1,/BORDER, TITLE='precent of normal', position=[0.3,0.07,0.7,0.11])
 ;tmptr = image(CMPPout[*,*,0,34],rgb_table=4,/buffer, title = 'jan CM/pp')
 ;c=colorbar()
-   tmptr.save,'/home/almcnall/test3.png'
+   tmptr.save,'/home/almcnall/WaterAvail01mo_Apr.png'
 
-temp = image(EthPON[*,*,8,33]*Ethpop*100, rgb_table=72)
+;temp = image(EthPON[*,*,8,33]*Ethpop*100, rgb_table=72)
 
 ;;;;;writting rasters for Chemonics;;;;;;;;;;;;;;;;
 ;;read in the tif data to see if it matches...maybe just a month off.
@@ -251,17 +264,18 @@ writeu,1,CMPPanom[*,*,8,33]
 close,1
 ;
 ;;open the tiff to grab the geotag
-ifile = file_search('/home/almcnall/SA4CHEM.tif')
+ifile = file_search('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/WaterAvail_SA/SA4CHEM.tif')
 ingrid = read_tiff(ifile, GEOTIFF=g_tags)
 ;then write out the files...where should the files go? what should they be called?
 ;percent of normal water stress, month yr.
-outdir = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/SAPON/'
-for yr = 1982,2016 do begin &$
-  for m = 1,12 do begin &$
+outdir = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/WaterAvail_SA/'
+;for yr = 1982,2016 do begin &$
+  yr = 2016
+  for m = 1,4 do begin &$
   ofile = outdir+STRING(FORMAT='(''WaterStressPercentNorm_SA'',I4.4,I2.2,''.tif'')',yr,m) &$
-  print,max(CMPPout[*,*,m-1,yr-startyr],/nan) &$
-  write_tiff, ofile, reverse(CMPPout[*,*,m-1,yr-startyr]*100,2), geotiff=g_tags, /FLOAT &$
-  endfor &$
+  print,max(ROanom[*,*,m-1,yr-startyr],/nan) &$
+  write_tiff, ofile, reverse(ROanom[*,*,m-1,yr-startyr]*100,2), geotiff=g_tags, /FLOAT &$
+  endfor 
 endfor
 
   

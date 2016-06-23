@@ -7,14 +7,11 @@ WRSI_USGS_plots_SA
 ;3/03/16 update for median WRSI plots
 ;06/04/16 WRSI plot for paper.
 
-;make the wrsi color table available
-;on Rain
-;wkdir = '/home/source/mcnally/scripts_idl/'
-;on dali
 wkdir = '/home/almcnall/Scripts/scripts_idl/'
-
 cd, wkdir
 .compile make_wrsi_cmap.pro
+.compile get_domain01.pro
+.compile get_nc.pro
 ;.compile make_sos_cmap.pro ;find out if correct file and move down.
 
 ;indir = '/home/sandbox/people/mcnally/WRSI_Sep2Feb_SA/'
@@ -22,48 +19,20 @@ indir = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/'
 
 ;read in the historic CHIRPS EOS so I can make the median
 ifile = file_search(indir+'WRSI_CHIRPS_SA_SEP2MAY_RFECHP4paper/SURFACEMODEL/201602/LIS_HIST_*29*.nc')
-;ifile = file_search(indir+'WRSI_EOS_*.nc')
-hEOS = fltarr(486,443,n_elements(ifile))
+;variable of interest
+VOI = 'WRSI_TimeStep_inst' &$
+EOSwrsi = get_nc(VOI, ifile)
 
-;read in one to just make a EROS-like plot
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; params = [NX, NY, map_ulx, map_lrx, map_uly, map_lry]
+params = get_domain01('SA')
 
-
-
-
-for i = 0, n_elements(ifile)-1 do begin &$
-  fileID = ncdf_open(ifile[i], /nowrite) &$
-  ;wrsiID = ncdf_varid(fileID,'WRSI_inst') &$
-  wrsiID = ncdf_varid(fileID,'WRSI_TimeStep_inst') &$
-  ncdf_varget,fileID, wrsiID, EOSwrsi &$
-  hEOS[*,*,i] = EOSWRSI &$
-endfor
-
-;read in the historic RFE2 EOS so I can make the median
-ifile = file_search(indir+'/WRSI_CHIRPS_SA_SEP2MAY_RFE2/zbyvar/WRSI_EOS_*nc')
-rEOS = fltarr(486,443,n_elements(ifile))
-
-for i = 0, n_elements(ifile)-1 do begin &$
-  fileID = ncdf_open(ifile[i], /nowrite) &$
-  wrsiID = ncdf_varid(fileID,'WRSI_TimeStep_inst') &$
-  ncdf_varget,fileID, wrsiID, EOSwrsi &$
-  rEOS[*,*,i] = EOSWRSI &$
-endfor
-
-;read in the parameters for plotting
-;nx = 486, ny = 443, nz = 33
-dims = size(hEOS, /dimensions)
-NX = dims[0]
-NY = dims[1]
-NZ = dims[2]
-
-;South africa domain
-map_ulx = 6.05 & map_lrx = 54.55
-map_uly = 6.35 & map_lry = -37.85
-;greg's way of nx, ny-ing
-ulx = (180.+map_ulx)*10. & lrx = (180.+map_lrx)*10.-1
-uly = (50.-map_uly)*10. & lry = (50.-map_lry)*10.-1
-gNX = lrx - ulx + 2 ;not sure why i have to add 2...
-gNY = lry - uly + 2
+NX = params[0]
+NY = params[1]
+map_ulx = params[2]
+map_lrx = params[3]
+map_uly = params[4]
+map_lry = params[5]
 
 ;EOSnull = hEOS
 ;EOSnull(where(EOSnull le 0))=0.5 ;do that things don't explode when divide by zero
@@ -72,29 +41,37 @@ gNY = lry - uly + 2
 ;hEOS for the same time period as RFE2 (2001-2014)
 short = hEOS[*,*,2001-1982:2014-1982] & help, short
 
- ncolors = 6
- index = [25,50,60,80,95,99,101]
- labels=['fail', 'poor', 'mediocre','average', 'good','very good']
- col_names=['dark orange', 'peru', 'light goldenrod', 'spring green', 'lime green', 'green']
-   ; w = WINDOW(DIMENSIONS=[700,900])
-      tmptr = CONTOUR(median(rEOS,dimension=3),FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
-      ASPECT_RATIO=1, Xstyle=1,Ystyle=1, $
-      ;RGB_TABLE=make_wrsi_cmap(),/FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors), $
-      /FILL, C_VALUE=index,C_COLOR=col_names, $
-      TITLE='EOS RFE2 (2001-2014)', /BUFFER)  &$
-      m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot) &$;
-      m = MAPCONTINENTS(/COUNTRIES,  COLOR = 'black', THICK=2) &$
-      tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
-      tmptr.mapgrid.FONT_SIZE = 0 &$
-      cb = colorbar(target=tmptr,ORIENTATION=0, /BORDER,TAPER=0,THICK=0,POSITION=[0.3,0.1,0.7,0.13])
-      ;cb.tickvalues = (FINDGEN(17))
-      ;cb.tickname = MONTHS
+;;;;FIG FOR NAT DATA SCI PAPER;;;;KEEP;;;;;;;;;
+ index = [0,25,50,60,80,95,99,101]
+ ncolors = n_elements(index)
+ labels=['no start', 'fail', 'poor', 'mediocre','average', 'good','very good']
+ col_names=['pink', 'peru', 'dark orange','light goldenrod', 'spring green', 'lime green', 'green']
+      tmptr = CONTOUR(EOSWRSI,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry,/BUFFER,  $ 
+      ASPECT_RATIO=1, Xstyle=1,Ystyle=1,/FILL, C_VALUE=index,C_COLOR=col_names, dimensions=[NX*1.5, NY])
+      m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], horizon_thick=1,/overplot) 
+      m = MAPCONTINENTS(/COUNTRIES,  COLOR = 'black', THICK=1) 
+      tmptr.mapgrid.linestyle = 'none'
+      tmptr.mapgrid.FONT_SIZE = 0
+      cb = colorbar(target=tmptr,ORIENTATION=1,TAPER=0,/BORDER, POSITION=[0.78,0.25,0.80,0.75])
+      cb.TEXTPOS=1
       cb.tickvalues = (FINDGEN(6))
       cb.tickname = labels      
-      cb.font_size=6
-     ;tmptr.save,'/home/almcnall/CHP2001.png'
-     tmptr.save,'/home/almcnall/test.png'
-      close
+      cb.font_size=10
+      tmptr.save,'/home/almcnall/figs4SciData/EOSWRSI_SA_FEB2016.png'
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;
+;;read in the historic RFE2 EOS so I can make the median
+;ifile = file_search(indir+'/WRSI_CHIRPS_SA_SEP2MAY_RFE2/zbyvar/WRSI_EOS_*nc')
+;rEOS = fltarr(486,443,n_elements(ifile))
+;
+;for i = 0, n_elements(ifile)-1 do begin &$
+;  fileID = ncdf_open(ifile[i], /nowrite) &$
+;  wrsiID = ncdf_varid(fileID,'WRSI_TimeStep_inst') &$
+;  ncdf_varget,fileID, wrsiID, EOSwrsi &$
+;  rEOS[*,*,i] = EOSWRSI &$
+;endfor
+
 
 for i = 0,n_elements(hEOS[0,0,*])-1 do begin &$
  ; p1 = image(byte(hEOS[*,*,i]), image_dimensions=[nx/10,ny/10],image_location=[map_ulx+0.25,map_lry], $
