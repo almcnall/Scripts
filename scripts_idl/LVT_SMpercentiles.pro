@@ -7,7 +7,8 @@ pro LVT_SMpercentiles
 ; 10/9/15 compute drought severity index for ethiopia region of interest. 
 ; 12/9/15 update for AGU
 ; 01/7/15 update for southen africa
-; 06/12/16 plot for data sci paper. 
+; 06/12/16 plot for data sci paper.
+; 06/28/16 I could look at the rootzone, since i did compute thoes for rowland.
 
 .compile /home/almcnall/Scripts/scripts_idl/get_nc.pro
 .compile /home/almcnall/Scripts/scripts_idl/nve.pro
@@ -23,14 +24,18 @@ indir = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/Param_Noah3.3/'
 ;ifile = file_search(indir+'lis_input_wa_elev_mode.nc');
 ifile = file_search(indir+'lis_input_sa_elev_mode.nc')
 
+;this mask isn't owrking the way that i want it to...
 VOI = 'LANDCOVER'
 LC = get_nc(VOI, ifile)
 bare = where(LC[*,*,15] eq 1, complement=other)
-water = where(LC[*,*,16] eq 1, complement=other)
+water = where(LC[*,*,16] eq 1, complement=other); is this water or wooded tundra
+veg = where(LC[*,*,1] eq 1, complement=other);
+
 
 mask = fltarr(NX,NY)+1.0
 mask(bare)=!values.f_nan
 mask(water)=!values.f_nan
+mask(veg)=!values.f_nan
 
 ifile = file_search('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/lis_input_wrsi.sa.nc')
 
@@ -41,32 +46,47 @@ NCDF_close, fileID
 landmask(where(landmask gt 0))=1
 landmask(where(landmask eq 0))=!values.f_nan
 
+
 ;for each month in the time series classify these using the USDM scheme
 ;from US drought monitor (0-2 = exceptional D4=5; 3-5 = extreme D3=4); 6-10=severe D2=[3];
 ;                         11-20=moderate D1=[2]; 21-30 = abnormal dry D0=[1]; >30 not drought D00[0]
-  npc = sm*!values.f_nan
-  npc(where(sm le 0.02)) = 5 &$
-  npc(where(sm gt 0.02 AND sm le 0.05)) = 4 &$
-  npc(where(sm gt 0.05 AND sm le 0.10)) = 3 &$
-  npc(where(sm gt 0.10 AND sm le 0.20)) = 2 &$
-  npc(where(sm gt 0.21 AND sm le 0.30)) = 1 &$
-  npc(where(sm gt 0.30 AND sm le 0.67)) = 0
-  npc(where(sm gt 0.67) = -1
+;  npc = sm*!values.f_nan
+;  npc(where(sm le 0.02)) = 5 &$
+;  npc(where(sm gt 0.02 AND sm le 0.05)) = 4 &$
+;  npc(where(sm gt 0.05 AND sm le 0.10)) = 3 &$
+;  npc(where(sm gt 0.10 AND sm le 0.20)) = 2 &$
+;  npc(where(sm gt 0.21 AND sm le 0.30)) = 1 &$
+;  npc(where(sm gt 0.30 AND sm le 0.67)) = 0
+;  npc(where(sm gt 0.67) = -1
+
+;sort of like Wassila's criteria for abnormal dryness < 30th percentile, 
+;drought 8 week SM <20th percentile, severe 12-week <10th percenitle
+;funk doesn't love these either: Change ‘drought’ to 20-30th, severe drought <20, abnormal dry 30-45,  >45
+
+  
+    npc = sm*!values.f_nan
+    npc(where(sm gt 0.001 AND sm le 0.20)) = 3 &$
+    npc(where(sm gt 0.20 AND sm le 0.30)) = 2 &$
+    npc(where(sm gt 0.30 AND sm le 0.45)) = 1 &$
+    npc(where(sm gt 0.45 AND sm le 0.67)) = 0
+    npc(where(sm gt 0.67)) = -1
 
 ;shapefile = '/home/code/idl_user_contrib/GAUL_2013_2012_0.shapefiles/G2013_2012_0.shp'
-CLASS = [' > normal ', 'abnormally dry', 'moderate drought', 'severe drought', 'extreme drought', 'exceptional drought']
+;CLASS = [' > normal ', 'abnormally dry', 'moderate drought', 'severe drought', 'extreme drought', 'exceptional drought']
+CLASS = [' > normal ', 'abnormally dry',  'drought', 'severe drought']
+
 month = ['jan','feb','mar','apr','may','jun','jul','aug']
 res=10
 ncolors = n_elements(class)
-index = [-0.5,0,1,2,3,4,5];
+index = [-0.5,0,1,2,3];
 ct=colortable(65)
 ;w=window()
 TIC
 ;;;;buffer is a million times faster for this! don't print to screen!;;;;
 ;;;FIGURE FOR PAPER - DON"T MESS UP;;;;;;
 y=n_elements(NPC[0,0,0,*])-1
-m=1 ;zero index 1=feb
-tmptr = CONTOUR(NPC[*,*,m,y]*landmask,FINDGEN(NX)/res+map_ulx, FINDGEN(NY)/res+map_lry, $
+m=1;zero index 1=feb
+tmptr = CONTOUR(NPC[*,*,m,y]*mask,FINDGEN(NX)/res+map_ulx, FINDGEN(NY)/res+map_lry, $
   RGB_TABLE=ct, ASPECT_RATIO=1, Xstyle=1,Ystyle=1, /BUFFER, $
   /FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors), dimensions=[NX*1.5, NY]) &$
   m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], horizon_thick=1, /overplot)
@@ -75,12 +95,12 @@ tmptr = CONTOUR(NPC[*,*,m,y]*landmask,FINDGEN(NX)/res+map_ulx, FINDGEN(NY)/res+m
   tmptr.mapgrid.FONT_SIZE = 0
 tmptr.mapgrid.label_position = 0
 cb = colorbar(target=tmptr,ORIENTATION=1,TAPER=0,/BORDER, POSITION=[0.78,0.25,0.80,0.75])
-cb.tickvalues = [0,1,2,3,4,5] &$
+cb.tickvalues = [0,1,2,3] &$
   cb.tickname = CLASS &$
-  cb.font_size=10
+  cb.font_size=12
   cb.minor=0
   cb.TEXTPOS=1
-tmptr.save,'/home/almcnall/figs4SciData/SM_percentiles.png' &$
+tmptr.save,'/home/almcnall/figs4SciData/SM_percentiles_FEB.png' &$
 TOC
 
 ;;;;;;compute the drought severity index;;;;;;;;;;

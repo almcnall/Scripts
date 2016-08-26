@@ -15,14 +15,21 @@ shapefile ='/discover/nobackup/almcnall/G2013_2012_0.shp'
 .compile /home/almcnall/Scripts/scripts_idl/get_domain25.pro
 
 ;for all of the ANOM COR with MW SMv2.2 use the following VOI
-VOI = 'SoilMoist_v_SoilMoist' ;variable of interest 'SoilMoist_v_Rainf', SoilMoist_v_NDVI
+VOI = 'Rainf' ;variable of interest 'SoilMoist_v_Rainf', SoilMoist_v_NDVI, Rainf, SoilMoist_v_SoilMoist
 
-ifileE = file_search(indir+'ESACCI/STATS_EA_CM2_v2.2_92_14/LVT_ACORR_FINAL.201501010000.d01.nc') & print, ifileE
+
+;ifileE = file_search(indir+'ESACCI/STATS_EA_CM2_v2.2_92_14/LVT_ACORR_FINAL.201501010000.d01.nc') & print, ifileE
+ifileE = file_search(indir+'SPI/STATS_SPI1/SPI_TS.201105010000.d01.nc') & print, ifileE
+ifileE3 = file_search(indir+'SPI/STATS_SPI3/SPI_TS.201105010000.d01.nc') & print, ifileE3
+
 ifileS = file_search(indir+'ESACCI/STATS_SA_CM2_v2.2_92_14/LVT_ACORR_FINAL.201501010000.d01.nc') & print, ifileS
 ifileW = file_search(indir+'ESACCI/STATS_WA_CM2_v2.2_92_14/LVT_ACORR_FINAL.201501010000.d01.nc') & print, ifileW
 
 ACORR_E = get_nc(VOI, ifileE)
 ACORR_E(where(ACORR_E lt -10))=!values.f_nan
+
+ACORR_E3 = get_nc(VOI, ifileE3)
+ACORR_E3(where(ACORR_E3 lt -10))=!values.f_nan
 
 ACORR_S= get_nc(VOI, ifileS)
 ACORR_S(where(ACORR_S lt -10))=!values.f_nan
@@ -107,14 +114,14 @@ Wmask(water)=!values.f_nan
 acorr_w[95:99]=1.0
 help, acorr_e, acorr_s, acorr_w
 ;specify east, south or west here
-acorr = acorr_w
-map_ulx = wmap_ulx
-map_lry = wmap_lry
-map_uly = wmap_uly
-map_lrx = wmap_lrx
-mask = wmask
-NX = wNX
-NY = wNY
+acorr = acorr_e
+map_ulx = emap_ulx
+map_lry = emap_lry
+map_uly = emap_uly
+map_lrx = emap_lrx
+mask = emask
+NX = eNX
+NY = eNY
 ;;;;;;;;;this is a CONTOUR plot;;;;;;;;;;;
 ;index = [-0.1,0,0.3,0.5,0.7,0.9]
 index = [-0.1,0,0.3,0.4,0.5,0.6,0.7,0.8, 0.9]
@@ -139,15 +146,17 @@ tmptr = CONTOUR(ACORR*mask,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
 close
 
  ;;;what does the corresponding IMAGE plot look like?
- p1 = image(ACORR*mask, image_dimensions=[nx/10,ny/10], $
-   image_location=[map_ulx,map_lry],RGB_TABLE=64, margin = 0.1)
+ ;;plot the SPI image
+ ncolors=14
+ p1 = image(ACORR_E3, image_dimensions=[nx/10,ny/10], $
+   image_location=[map_ulx,map_lry],RGB_TABLE=70, margin = 0.1)
  rgbind = FIX(FINDGEN(ncolors)*255./(ncolors))  &$  ; set tindex of the colors to be pulled
    rgbdump = p1.rgb_table & rgbdump = CONGRID(rgbdump[*,rgbind],3,256)  &$ ; just rewrites the discrete colorbar
    ;rgbdump[*,255] = [255,255,255] &$ ; set map values of zero to white, you can change the color
    ;rgbdump[*,0] = [255,255,255] &$;[190,190,190] &$
    p1.rgb_table = rgbdump &$ ; reassign the colorbar to the image
-   ;p1.MAX_VALUE=0.9 &$
-   ;p1.min_value=-0.1 &$
+   p1.MAX_VALUE=3 &$
+   p1.min_value=-3 &$
    m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot, horizon_thick=1)
  m1.mapgrid.linestyle = 'none' &$  ; could also use 6 here
    m1.mapgrid.color = [255, 255, 255] &$ ;150
@@ -156,7 +165,7 @@ close
    p1.font_size=20 &$
    cb = COLORBAR(target=p1,ORIENTATION=1,/BORDER,TAPER=1, THICK=0,font_size=24)
     
-    ;plot the CSV time series files;;;;;;;;;;;;;;;;;;;
+    ;;;;;;plot the CSV time series files;;;;;;;;;;;;;;;;;;;
     indir = '/home/sandbox/people/mcnally/FLDAS_EVAL/'
 ;LVT_test/ESACCI/STATS_EA_CM2_v2.2_92_14
 
@@ -216,13 +225,24 @@ close
   ifile1 = file_search(indir+'MEAN_TIGRAY_GDAS_RFE_2001_2014_EA.dat')& print, ifile1
   ifile1 = file_search(indir+'MEAN_TIGRAY_GDAS_CHIRPS_2001_2014_EA.dat')& print, ifile1
   
-  
+  ;soil moisture
+  ifile1=file_search('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/LVT_test/GIMMS/STATS_EA_0817/MEAN_EAST.dat')
+  ifile1=file_search('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/LVT_test/GIMMS/STATS_EA_0817/MEAN_SHEKA.dat')
+
+  ;evapotranspiration..why no outputs for this?
+  ifile1=file_search('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/LVT_test/GIMMS/STATS_EA_0817et/MEAN_EAST.dat')
+  ;ifile1=file_search('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/LVT_test/GIMMS/STATS_EA_0817et/MEAN_SHEKA.dat')
   
   indat2 = read_ascii(ifile1, dlimiter=" ") & help, indat2
   indat2.field01(where(indat2.field01 lt -100))=!values.f_nan
   CCISM = reform(indat2.field01[11,0:4744],365,13)
   SM01 = reform(indat2.field01[5,0:4744],365,13)
 
+;NDVI vs ET plots
+ET = indat2.field01[5,*]
+NDVI = indat2.field01[11,*]
+p1=plot(ET)
+p1=plot(NDVI, /overplot, 'b')
 
   w=window()
   p1 = plot(mean(ccismW,dimension=2,/nan),/buffer,'c', name= 'CCI-SM')

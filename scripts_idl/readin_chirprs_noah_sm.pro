@@ -1,5 +1,5 @@
 pro readin_CHIRPRS_NOAH_SM
-;this reads in the CHIPRS+NOAH time series 1982-present at 0.1 degree
+;this reads in the CHIPRS+NOAH monthly time series 1982-present at 0.1 degree
 ;taken from noahvSSEB
 
 .compile /home/almcnall/Scripts/scripts_idl/get_domain01.pro
@@ -8,7 +8,7 @@ pro readin_CHIRPRS_NOAH_SM
 ;.compile /home/almcnall/Scripts/scripts_idl/mve.pro
 ;.compile /home/source/mcnally/scripts_idl/get_nc.pro
 
-startyr = 2003 ;start with 1982 since no data in 1981
+startyr = 2000 ;start with 1982 since no data in 1981
 endyr = 2016
 nyrs = endyr-startyr+1
 
@@ -27,7 +27,7 @@ map_lrx = params[3]
 map_uly = params[4]
 map_lry = params[5]
 
-;;;;;;use hymap runoff vs. non-routed;;;;
+;;;;;;use SM01 vs SM02 percentiles;;;;
 data_dir='/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_SA/post/'
 ;data_dir='/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_WA/post/'
 

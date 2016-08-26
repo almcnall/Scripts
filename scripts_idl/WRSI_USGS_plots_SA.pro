@@ -12,6 +12,7 @@ cd, wkdir
 .compile make_wrsi_cmap.pro
 .compile get_domain01.pro
 .compile get_nc.pro
+.compile make_cmap.pro
 ;.compile make_sos_cmap.pro ;find out if correct file and move down.
 
 ;indir = '/home/sandbox/people/mcnally/WRSI_Sep2Feb_SA/'
@@ -23,6 +24,29 @@ ifile = file_search(indir+'WRSI_CHIRPS_SA_SEP2MAY_RFECHP4paper/SURFACEMODEL/2016
 VOI = 'WRSI_TimeStep_inst' &$
 EOSwrsi = get_nc(VOI, ifile)
 
+;;;readin diego's WRSI anomaly file;;;;;
+ingrid = bytarr(971,885)
+ifile = file_search('/home/almcnall/figs4SciData/Southern_Africa_WRSI_Index_EOS_2015.bil')
+openr,1,ifile
+readu,1,ingrid
+close,1
+
+ingrid = reverse(ingrid,2)
+;congrid gets it close enough to LIS output dimensions
+ingrid01_EOS = congrid(ingrid,NX,NY)
+
+Southern_Africa_WRSI_Index_EOS_2015.bil
+
+ingrid = bytarr(971,885)
+ifile = file_search('/home/almcnall/figs4SciData/Southern_Africa_WRSI_anoml_EOS_2015.bil')
+openr,1,ifile
+readu,1,ingrid
+close,1
+
+ingrid = reverse(ingrid,2)
+;congrid gets it close enough to LIS output dimensions
+ingrid01 = congrid(ingrid,NX,NY)
+ingrid01(where(ingrid01 gt 156)) = 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; params = [NX, NY, map_ulx, map_lrx, map_uly, map_lry]
 params = get_domain01('SA')
@@ -46,7 +70,8 @@ short = hEOS[*,*,2001-1982:2014-1982] & help, short
  ncolors = n_elements(index)
  labels=['no start', 'fail', 'poor', 'mediocre','average', 'good','very good']
  col_names=['pink', 'peru', 'dark orange','light goldenrod', 'spring green', 'lime green', 'green']
-      tmptr = CONTOUR(EOSWRSI,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry,/BUFFER,  $ 
+      tmptr = CONTOUR(EOSWRSI,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, layout=[2,1,2],/current,  $ 
+     ; tmptr = CONTOUR(ingrid01_EOS,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, layout=[2,1,1], $
       ASPECT_RATIO=1, Xstyle=1,Ystyle=1,/FILL, C_VALUE=index,C_COLOR=col_names, dimensions=[NX*1.5, NY])
       m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], horizon_thick=1,/overplot) 
       m = MAPCONTINENTS(/COUNTRIES,  COLOR = 'black', THICK=1) 
@@ -58,6 +83,32 @@ short = hEOS[*,*,2001-1982:2014-1982] & help, short
       cb.tickname = labels      
       cb.font_size=10
       tmptr.save,'/home/almcnall/figs4SciData/EOSWRSI_SA_FEB2016.png'
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;;;FIG FOR NAT DATA SCI PAPER;;;;KEEP;;;;;;;;;use the same color breaks as SSEB
+ncolors = 7
+;RGB_INDICES=[0,50,70,90,110,130,150]
+index = [0,50,70,90,110,130,150];
+ct=colortable(73)
+ 
+  tmptr = CONTOUR(ingrid01,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $
+  ;ASPECT_RATIO=1, Xstyle=1,Ystyle=1,/FILL, C_VALUE=index,C_COLOR=col_names, dimensions=[NX*1.5, NY])
+  ASPECT_RATIO=1, Xstyle=1,Ystyle=1,/FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors),/BUFFER) &$
+    ct[108:108+36,*] = 200  &$
+    tmptr.rgb_table=ct
+m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], horizon_thick=1,/overplot)
+;set zero to white?
+m = MAPCONTINENTS(/COUNTRIES,  COLOR = 'black', THICK=1)
+tmptr.mapgrid.linestyle = 'none'
+tmptr.mapgrid.FONT_SIZE = 0
+;cb = colorbar(target=tmptr,ORIENTATION=1,TAPER=1,/BORDER, POSITION=[0.88,0.25,0.90,0.75])
+cb = colorbar(target=tmptr,ORIENTATION=1,TAPER=1,/BORDER, TITLE='WRSI anomaly %',POSITION=[0.88,0.25,0.90,0.75])
+
+cb.TEXTPOS=1
+;cb.tickvalues = (FINDGEN(6))
+;cb.tickname = labels
+cb.font_size=12
+tmptr.save,'/home/almcnall/figs4SciData/EOSWRSI_SA_ANOM_DIEGO.png'
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;
@@ -138,6 +189,8 @@ for y = 0, n_elements(EOS[0,0,*])-1 do begin &$
 endfor
  
 ;check out one anomaly map, or all, oops.
+;where is the make_cmap code?
+
 ncolors = 10
  for i = 0,n_elements(EOSa[0,0,*])-1 do begin &$
   p1 = image(byte(EOSa[*,*,i]*100), image_dimensions=[nx/10,ny/10],image_location=[map_ulx,map_lry], $
