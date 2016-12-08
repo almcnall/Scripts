@@ -4,6 +4,7 @@
 ;; 3/21/15 trying with new GIMMS data
 ;; 11/20/15 revist to get to the bottom of some of these trends.
 ;; 12/21/15 back for minor revisions
+;; 11/15/16 moved the GIMMS NDVI to discover, incase we want to update the code.
 ;*********
 startyr = 1982
 endyr = 2013
@@ -35,8 +36,10 @@ endmo = 12
 nmos = endmo - startmo+1
 npers = (endmo - startmo +1) *2
 
-data_dir = '/home/sandbox/people/mcnally/'
-;;read in and sub/superset the data
+;data_dir = '/home/sandbox/people/mcnally/'
+data_dir = '/discover/nobackup/almcnall/LIS7runs/'
+
+;read in and sub/superset the data
 fileID = ncdf_open(data_dir+'/GIMMS-3g_EastAfrica_AM.nc') &$
 ndviID = ncdf_varid(fileID,'NDVI3g') &$
 ncdf_varget,fileID,ndviID, GIMMS

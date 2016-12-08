@@ -42,6 +42,7 @@ for X = 0, NX-1 do begin &$
 endfor
 
 ;now pull timeseries of interest
+;go to ROI_EA.pro to update this:
 ;Mpala Kenya:
 mxind = FLOOR( (36.8701 - map_ulx)/ 0.25)
 myind = FLOOR( (0.4856 - map_lry) / 0.25)

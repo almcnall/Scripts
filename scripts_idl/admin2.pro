@@ -1,50 +1,63 @@
 pro afripop
 
-;the purpose of this script is to open the ~1km continental Africa-Pop file and subset to the USGS domains
-;then write out as tiff files. was used in conjunction with the aqueduct.pro script (Qs). 
-;11/18/16 update for discover (not chg/rain)
-;0.0083333333
-;0.0000000000
-;0.0000000000
-;-0.0083333333
-;-17.5310696920
-;37.5419019063
-; x = 8858
-; y= 10143
+;the purpose of this script is to open the 0.1 degree admin 2 map and subset it to the EA, SA, WA domains
 
+.compile /home/almcnall/Scripts/scripts_idl/get_domain01.pro
+.compile /home/almcnall/Scripts/scripts_idl/get_nc.pro
 ;I also want to add the Yemen data to the East Africa map...
-indir = '/discover/nobackup/almcnall/Africa-POP/'
-;indir = '/home/sandbox/people/mcnally/Africa-POP/'
-ingrid = read_tiff(indir+'YEM10.tif')
-yemgrid = reverse(ingrid,2)
-yemgrid=yemgrid[8:15257, 0:8259] & help, yemgrid
-yemgrid = rebin(yemgrid,1525,826) & help, yemgrid
-
-yemgrid(where(yemgrid lt 0)) = !values.f_nan
-;yemgrid = congrid(yemgrid,1525,826) & help, yemgrid
-
-
-;indir = '/home/sandbox/people/mcnally/Africa-POP/'
-indir = '/discover/nobackup/almcnall/Africa-POP/'
-ingrid = read_tiff(indir+'africa2010ppp.tif')
+indir = '/discover/nobackup/almcnall/SHPfiles/'
+ingrid = read_tiff(indir+'rfe2_g2008_1.tif')
 ingrid = reverse(ingrid,2)
-p1=image(ingrid, rgb_table=64)
+
+
 ;;;;;;;;;;;Southern Africa WRSI/Noah window;;;;;;;;;
 ;
 ;Southern Africa (37.85 S - 6.35 N; 6.05 E - 54.55 E)
-NX = 486 & NY = 443
-map_ulx = 6.05  & map_lrx = 54.55
-map_uly = 6.35  & map_lry = -37.85
+;params = [NX, NY, map_ulx, map_lrx, map_uly, map_lry, ulx, lrx, uly, lry]
 
-ulx = (17.531+map_ulx)/0.00833  & lrx = 8858-((56.25-map_lrx)/0.00833)
-uly = (47+map_uly)/0.00833   & lry = (47.+map_lry)/0.00833
+params = get_domain01('EA')
 
-print, ulx, lrx, uly, lry
-NX = lrx - ulx
-NY = uly - lry
+NX = params[0]
+NY = params[1]
+map_ulx = params[2]
+map_lrx = params[3]
+map_uly = params[4]
+map_lry = params[5]
 
-afr=ingrid[ulx:lrx,lry:uly]
+    ulx = (20.+ map_ulx)*10.
+    ;lrx = (20.+ map_lrx)*10.-1 ;SA needed minus one
+    lrx = (20.+ map_lrx)*10. ;EA does not
+    uly = abs(-40.- map_uly)*10. 
+    ;lry = abs(-40.- map_lry)*10.-1
+    lry = abs(-40.- map_lry)*10.
+
+
+
+;NX = 486 & NY = 443
+;map_ulx = 6.05  & map_lrx = 54.55
+;map_uly = 6.35  & map_lry = -37.85
+
+;ulx = (17.531+map_ulx)/0.00833  & lrx = 8858-((56.25-map_lrx)/0.00833)
+;uly = (47+map_uly)/0.00833   & lry = (47.+map_lry)/0.00833
+
+;print, ulx, lrx, uly, lry
+;NX = lrx - ulx
+;NY = uly - lry
+
+SAafr=ingrid[ulx:lrx,lry:uly]
+;write out binary file that LIS can read:
+;options big_endian
+;UNDEF  -9999.
+saafr(where(saafr eq 0)) = -9999
+byteorder,saafr,/XDRTOF
+
+ofile = strcompress(indir+'/WA_admin1.1gd4r')
+openw,1,ofile
+writeu,1,saafr
+close,1
+
 afr(where(afr lt 0)) = !values.f_nan
+
 
 SA10 = congrid(afr,486,443)
 temp = image(sa10,transparency=0)

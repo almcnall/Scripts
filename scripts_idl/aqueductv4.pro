@@ -17,7 +17,19 @@
 ;.compile /home/source/mcnally/scripts_idl/get_nc.pro
 
 ;;USE readin_RFE_NOAH_Qs or readin_CHIRPS_NOAH_Qs
-help,RO_CHIRPS01 ;,\, RO_RFE01, 
+help,RO_CHIRPS01, RO_annual ;,\, RO_RFE01, 
+;ofile = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/WaterAvail_SA/EA_NOAH_RO_ANNUAL_294_348_35.bin'
+;openw,1,ofile
+;writeu,1,ro_annual
+;close, 1
+
+;ok now plot the ration of m3/ (ppl/km2)*100
+;previously i had plotted average rather than total (multiply by 12)
+YR = 2015
+CMPP15 = RO_annual[*,*,33]/(pop15FG*10000000000) & print, max(CMPP15, /nan), min(CMPP15, /nan)
+
+p1 = image(cmpp15, rgb_table=72)
+
 
 ;;;;Plot population;;;;;;;
 indir = '/discover/nobackup/almcnall/Africa-POP/'
@@ -327,6 +339,11 @@ myind = FLOOR( (0.4856 - map_lry) / 0.1)
 ;Adwa, tigray region (14,39.4) NDVI has higher freq variation that soil moisture here
 txind = FLOOR( (39 - map_ulx)/ 0.1)
 tyind = FLOOR( (14 - map_lry) / 0.1)
+
+;Nairobi Kenya, Thika Dam -0.820278, 36.850278
+;-1.283333, 36.816667
+nxind = FLOOR( (36.816667 - map_ulx)/ 0.1)
+nyind = FLOOR( (-1.28333 - map_lry) / 0.1)
 ;
 ;;Sheka (dense veg), veg is prob not water limited here so anti-correlation 
 ;;makes more sense. it was even significant neg corr (-0.2) when lagged, I think
@@ -383,7 +400,13 @@ p1 = plot(mean(mean(CMPPcube[hulx:hlrx,hlry:huly,*,31],dimension=1,/NAN),dimensi
 p1 = plot(mean(mean(CMPPcube[hulx:hlrx,hlry:huly,*,30],dimension=1,/NAN),dimension=1,/NAN), /overplot, thick=5, linestyle=3)
 p1 = plot(mean(mean(CMPPcube[hulx:hlrx,hlry:huly,*,29],dimension=1,/NAN),dimension=1,/NAN), /overplot, thick=5, linestyle=2)
 
-p1.xrange=[0,407]
+;;water storage check;;;;
+roc = reform(ro_chirps01,nx,ny,12*35) & help, roc
+soc = reform(smm3,nx,ny,12*35) & help, soc
+print, transpose(transpose(soc[nxind, nyind,*]))
+print, transpose(transpose(smooth(soc[nxind, nyind,*],24)))
+
+p1.xrange=[0,420]
 p1.xtickinterval=12
 p1.xtickname=strmid(string(indgen(nyrs+1)+startyr),6,2)
 p1.xminor=1

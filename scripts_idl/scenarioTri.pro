@@ -2,6 +2,12 @@
 ; using the basics from aqueductv4 script for reading in files.
 ; 03/31/16 Organized into ens directories. 
 ; 04/09/16 updating colors
+; 11/2/16 Forecasting workflow - how is this different than 'worksheet_tricolor.pro'
+; (1) do OL/monitor runs 
+; (2) do ESPvanilla 
+; (3) make/find map of percentile thresholds (see make_permap.pro)
+; (4) generate 'count' maps that computes number of times a ESP is above/below a given threhold
+
 .compile /home/almcnall/Scripts/scripts_idl/get_nc.pro
 
 ;.compile /home/source/mcnally/scripts_idl/get_nc.pro
@@ -48,11 +54,7 @@ mask = fltarr(NX,NY)+1.0
 mask(bare)=!values.f_nan
 mask(water)=!values.f_nan
 
-
-;;now skip to countmaps;;;;;
-
-;
-;;generate the threshold maps in make_permap.pro
+;;generate the or read in the threshold maps from make_permap.pro
 ;;so far only SM01 is available.
 ;permap = fltarr(nx, ny, 12, 3)
 ;ifile3 = file_search('/home/almcnall/SM01_permap_294_348_12_3.bin')
@@ -60,49 +62,8 @@ mask(water)=!values.f_nan
 ;readu, 1, permap
 ;close,1
 ;
+;generate or readin the countmap from the ESP forecast 
 ;delvar, sm, sm01, sm02, qsub, qsuf, var, npix
-;
-;;ok now i have thresholds for each month - now i just have to count my forecasts.
-;;i have the percentile thresholds, now i read in the data...
-;;i have saved these for SM, so skip this sometimes.
-;indir2 = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/ESPtest/Noah33_CM2_ESPboot_OCT2015JAN2016/ENS/ens???/post/'
-;MM=11
-;ifile2 = file_search(strcompress(indir2+'FLDAS_NOAH01_C_EA_M.A2015'+string(MM)+'.001_*', /remove_all))
-;
-;SM01 = fltarr(NX, NY, n_elements(ifile2))
-;;so read in each of these files, 
-;for i = 0, n_elements(ifile2)-1 do begin &$
-;  VOI = 'SoilMoi00_10cm_tavg' &$
-;  SM = get_nc(VOI, ifile2[i]) &$
-;  SM01[*,*,i] = SM &$
-;endfor
-;
-;;check the value at each pixel? or can i do whole map vs the threshold, count
-;;help, permap[*,*,MM-1,*]
-;
-;;;;first look at the low percentile map
-;countmap = fltarr(NX,NY,3)*0
-;
-;for j = 0, n_elements(SM01[0,0,*])-1 do begin &$
-;    
-;    ;do I need the where statement? no this should give me a map of ones.
-;    dry = SM01[*,*,j] lt permap[*,*,MM-1,0] &$
-;    countmap[*,*,0] = countmap[*,*,0] + dry &$
-;    
-;    ;i shouldn't have to do the between since i can subtract at the end since it should equal 100.
-;    ;but how do i do the subtraction? 
-;    avg = SM01[*,*,j] lt permap[*,*,MM-1,2] &$
-;    countmap[*,*,1] = countmap[*,*,1] + avg &$
-;    
-;endfor
-;countmap[*,*,2] = 100
-;countmap[*,*,2] = countmap[*,*,2]-countmap[*,*,1]
-;countmap[*,*,1] = countmap[*,*,1]-countmap[*,*,0]
-
-;ofile = strcompress('/home/almcnall/2015'+string(MM)+'_countmap_294_348_3.bin',/remove_all)
-;openw,1,ofile
-;writeu,1,countmap
-;close,1
 
 ;what do I need to plot these?
 ;;;SKIP To HERE;;;;;;
@@ -274,6 +235,7 @@ CLASS = ['absolute scarcity ', 'scarcity', 'stress', 'no stress']
 
 ;only use this shapefile when necessary so slow.
 ;shapefile = '/home/code/idl_user_contrib/GAUL_2013_2012_0.shapefiles/G2013_2012_0.shp'
+shapefile = '/discover/nobackup/almcnall/SHPfiles/G2013_2012_0.shp'
 
   ncolors = 4
   RGB_INDICES=[0,41,82,142] ;..these values are nothing like what i had before..

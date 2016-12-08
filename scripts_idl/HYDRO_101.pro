@@ -1,6 +1,8 @@
 ;the regional water balance
 ; 8/8/16
 ; 8/22/16 replotting ratios with colorbars and country boundaries
+; 8/30/16 add timeseries for regions of interest
+; 9/01/16 try to fix crashing problems by not using ide
 
 ;1. agreggate by HYMAP basin
 ;read in the basin map to see if i can average over these areas instead of rando boxes.
@@ -82,7 +84,6 @@ Qg = get_nc(VOI, ifile)
 Qg(where(Qg eq -9999))=!values.f_nan
 
 ;;;what does the corresponding IMAGE plot look like?
-;;plot the SPI image
 w = window(DIMENSIONS=[600,1000])
 ncolors=10
 p1 = image(RO*86400, image_dimensions=[nx/10,ny/10], $
@@ -104,8 +105,6 @@ rgbind = FIX(FINDGEN(ncolors)*255./(ncolors))  &$  ; set tindex of the colors to
   p1.font_size=12
   cb = COLORBAR(target=p1,ORIENTATION=1,/BORDER,TAPER=1, THICK=0,font_size=12)
 
-
-
 ;read in the delS from each file
 ;delS = FLTARR(NX,NY,nyrs)*!values.f_nan
 SM = FLTARR(NX,NY,nyrs)*!values.f_nan
@@ -113,7 +112,19 @@ P = FLTARR(NX,NY,nyrs)*!values.f_nan
 ET = FLTARR(NX,NY,nyrs)*!values.f_nan
 RO = FLTARR(NX,NY,nyrs)*!values.f_nan
 
-;is this loop doing what i want it to do?
+;**************************************
+;**************************************
+;read in from readin_chirps_noach_et.pro, readin_chirps_noach_sm.pro, readin_chirps_noach_q.pro
+help, Evap_annual, SMtot_annual, RO_annual, rain_annual
+;read in regions of interes from 
+help, bale_xy, mpala_xy, tigray_xy, sheka_xy, yirol_xy, wyemen_xy
+x = yirol_xy[0]
+y = yirol_xy[1]
+temp = plot(rain_annual[x,y,*],thick=2)
+temp = plot(RO_annual[x,y,*], /overplot, 'green')
+temp = plot(evap_annual[x,y,*], /overplot, 'b')
+temp = plot(SMtot_annual[x,y,*]/100000, /overplot, 'orange')
+temp.title = 'yirol, south sudan Rain(black), ET(blue), SM/100000 (orange), RO (1982-2015)'
 for y = startyr,endyr do begin &$
   ;yr2 = y+1  &$
   ;delS is P1-ET1-RO1=delS1, need to make this one more flexible.
@@ -122,25 +133,27 @@ for y = startyr,endyr do begin &$
   ;temp = get_nc(VOI, ifile) &$
   ;delS[*,*,y-startyr] = temp &$
   
+  ;read in the annual average file generated with CDO
   ifile2 = file_search(data_dir+STRING(FORMAT='(''FLDAS'',I4.4,''.nc'')',y)) &$
   VOI = 'SM_tavg' &$ 
   temp = get_nc(VOI, ifile2) &$
   SM[*,*,y-startyr] = temp &$
   
-  ifile3 = file_search(data_dir+STRING(FORMAT='(''FLDAS'',I4.4,''.nc'')',y)) &$
   VOI = 'Rainf_f_tavg' &$
-  temp = get_nc(VOI, ifile3) &$
+  temp = get_nc(VOI, ifile2) &$
   P[*,*,y-startyr] = temp &$
   
-   ifile4 = file_search(data_dir+STRING(FORMAT='(''FLDAS'',I4.4,''.nc'')',y)) &$
   VOI = 'Evap_tavg' &$
-  temp = get_nc(VOI, ifile4) &$
+  temp = get_nc(VOI, ifile2) &$
   ET[*,*,y-startyr] = temp &$
     
-    ifile3 = file_search(data_dir+STRING(FORMAT='(''FLDAS'',I4.4,''.nc'')',y)) &$
-    VOI = 'RO_tavg' &$
-    temp = get_nc(VOI, ifile3) &$
-    RO[*,*,y-startyr] = temp &$
+  VOI = 'RO_tavg' &$
+  temp = get_nc(VOI, ifile2) &$
+  RO[*,*,y-startyr] = temp &$
+    
+  VOI = 'RO_tavg' &$
+  temp = get_nc(VOI, ifile2) &$
+  RO[*,*,y-startyr] = temp &$
   
 endfor
 
@@ -162,6 +175,9 @@ ymask35 = rebin(ymask,nx,ny,nyrs)
 cmask35 = rebin(cmask,nx,ny,nyrs)
 
 ROI = cmask35
+
+
+
 ;;;show time series and cummulative relationship for these P, ET, RO
 Pavg = mean(mean(p*ROI,dimension=1, /nan), dimension=1, /nan)
 Eavg = mean(mean(ET*ROI,dimension=1, /nan), dimension=1, /nan)

@@ -9,8 +9,24 @@
 ;12/05/16 try out the multi-yr population data. I can use either storage term. I can stick with surface water for now.
 
 ;HELP, CMPPcube
-HELP, RO_CHIRPS01, RO_RFE01
+HELP, RO_CHIRPS25, RO_ANNUAL, P_AnnUAL
+nskip=0
+;fit a line at each point and keep the slope.
+trendmap = fltarr(NX, NY)
+Ptrendmap = fltarr(NX, NY)
 
+for x = 0, NX-1 do begin &$
+  for y = 0, NY-1 do begin &$
+    trendmap[x,y] = REGRESS(INDGEN(nyrs-nskip),REFORM(RO_ANNUAL[x,y,nskip:nyrs-1]),MCORRELATION=r) &$
+    Ptrendmap[x,y] = REGRESS(INDGEN(nyrs-nskip),REFORM(P_ANNUAL[x,y,nskip:nyrs-1]),MCORRELATION=r) &$
+  endfor &$
+endfor
+
+;migrate to RAIN
+ofile = '/discover/nobackup/almcnall/VIC_ANNUAL_RO_118_141_12_35.bin
+openw,1,ofile
+writeu,1,RO_CHIRPS25
+close,1
 ;make a mask where if RO is greater than X std then it = x std. That should damp this el nino business.
 ;how do i plot how many stdev this el nino made go cray? 
 

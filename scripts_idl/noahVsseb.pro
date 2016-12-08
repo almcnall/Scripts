@@ -6,9 +6,14 @@
 ; the percent of detection might yield better fews-like results 
 ; 5/22/16 plot going into the FLDAS paper.
 ; 6/06/16 pull out the read-in like i did for the runoff 
+; 10/21/16 revist for revisions
+; 10/23/16 add in lines for VIC
+; 10/26/16 separate out the MED and PON calculations for 3 domains
 
 .compile /home/almcnall/Scripts/scripts_idl/get_nc.pro
 .compile /home/almcnall/Scripts/scripts_idl/get_domain01.pro
+;.compile /home/almcnall/Scripts/scripts_idl/get_domain25.pro
+
 
 ;.compile /home/almcnall/Scripts/scripts_idl/nve.pro
 ;.compile /home/almcnall/Scripts/scripts_idl/mve.pro
@@ -23,131 +28,88 @@ startmo = 1
 endmo = 12
 nmos = endmo - startmo+1
 
+;params = get_domain25('WA')
+
 ;; params = [NX, NY, map_ulx, map_lrx, map_uly, map_lry]
 params = get_domain01('SA')
 
-NX = params[0]
-NY = params[1]
-map_ulx = params[2]
-map_lrx = params[3]
-map_uly = params[4]
-map_lry = params[5]
+sNX = params[0]
+sNY = params[1]
+smap_ulx = params[2]
+smap_lrx = params[3]
+smap_uly = params[4]
+smap_lry = params[5]
 
+params = get_domain01('EA')
+
+eNX = params[0]
+eNY = params[1]
+emap_ulx = params[2]
+emap_lrx = params[3]
+emap_uly = params[4]
+emap_lry = params[5]
+
+params = get_domain01('WA')
+
+wNX = params[0]
+wNY = params[1]
+wmap_ulx = params[2]
+wmap_lrx = params[3]
+wmap_uly = params[4]
+wmap_lry = params[5]
+
+;;;read in landcover MODE to grab sparse veg mask;;;
+;;;;eastern, southern africa;;;;;;
 indir = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/Param_Noah3.3/'
-;ifile = file_search(indir+'lis_input.MODISmode_ea.nc');lis_input_wa_elev.nc
-;ifile = file_search(indir+'lis_input_wa_elev_mode.nc'); 
-ifile = file_search(indir+'lis_input_sa_elev_mode.nc')
+mfile_E = file_search(indir+'lis_input.MODISmode_ea.nc')
+mfile_S = file_search(indir+'lis_input_sa_elev_mode.nc')
+mfile_W = file_search(indir+'lis_input_wa_elev_mode.nc')
+
 
 VOI = 'LANDCOVER'
-LC = get_nc(VOI, ifile)
+LC = get_nc(VOI, mfile_E)
 bare = where(LC[*,*,15] eq 1, complement=other)
 water = where(LC[*,*,16] eq 1, complement=other)
+Emask = fltarr(eNX,eNY)+1.0
+Emask(bare)=!values.f_nan
+Emask(water)=!values.f_nan
 
-mask = fltarr(NX,NY)+1.0
-mask(bare)=!values.f_nan
-mask(water)=!values.f_nan
+LC = get_nc(VOI, mfile_S)
+bare = where(LC[*,*,15] eq 1, complement=other)
+water = where(LC[*,*,16] eq 1, complement=other)
+Smask = fltarr(sNX,sNY)+1.0
+Smask(bare)=!values.f_nan
+Smask(water)=!values.f_nan
+
+LC = get_nc(VOI, mfile_W)
+bare = where(LC[*,*,15] eq 1, complement=other)
+water = where(LC[*,*,16] eq 1, complement=other)
+Wmask = fltarr(wNX,wNY)+1.0
+Wmask(bare)=!values.f_nan
+Wmask(water)=!values.f_nan
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;READ IN the SSEB data for east africa
-
-;;first read one in to get the domain info for upper left x and y.
-indir = '/discover/nobackup/projects/fame/Validation/SSEB/ETA_AFRICA/'
-ifile = file_search(strcompress(indir+'/ma0401.modisSSEBopET.tif',/remove_all))
-ingrid = read_tiff(ifile, geotiff=gtag)
-ingrid = reverse(ingrid,2)
-
-smap_ulx = gtag.MODELTIEPOINTTAG[3]
-smap_lrx = 54.75 ;
-smap_uly = gtag.MODELTIEPOINTTAG[4]
-smap_lry = -37.75 
-
-ulx = (180.+smap_ulx)/0.0083  & lrx = (180.+smap_lrx)/0.0083
-uly = (50.-smap_uly)/0.0083    & lry = (50.-smap_lry)/0.0083
-sNX = lrx - ulx -1
-sNY = lry - uly
-print, nx, ny
-help, ingrid
-
-;;;;;;;clip continental africa to east/west africa domain;;;;;;
-ea_left = (map_ulx-smap_ulx)/0.0083 & print, ea_left
-ea_right = (map_lrx-smap_ulx)/0.0083 & print, ea_right
-ea_bot = abs(smap_lry-map_lry)/0.0083 & print, ea_bot
-ea_top = (map_uly-smap_lry)/0.0083 & print, ea_top
-
-;temp = image(ingrid[ea_left:ea_right,ea_bot:ea_top])
-
-startyr = 2003
-endyr = 2016
-help, ingrid[ea_left:ea_right,ea_bot:ea_top]
-delvar, ingrid
-nyrs = endyr-startyr+1
-
-;ETA = bytarr(3537,4182,12,(endyr-startyr)+1)
-;ETA = bytarr(294,348,12,(endyr-startyr)+1)
-
+;;See clipssebtoeros.pro for SSEB subsetting routine
 indir = '/discover/nobackup/projects/fame/Validation/SSEB/ETA_AFRICA/'
 
-;NX = 294
-;NY = 348
-ETA = bytarr(NX,NY,12,(endyr-startyr)+1)
-;openr,1,indir+'ETA_EA_294_348_12_14_byte.bin'
-;openr,1,indir+'ETA_WA_446_124_12_14_byte.bin'
-openr,1,indir+'ETA_SA_486_443_12_14_byte.bin'
-readu,1,ETA
+ETAe = bytarr(eNX,eNY,12,(endyr-startyr)+1)
+ETAs = bytarr(sNX,sNY,12,(endyr-startyr)+1)
+ETAw = bytarr(wNX,wNY,12,(endyr-startyr)+1)
+
+openr,1,indir+'ETA_EA_294_348_12_14_byte.bin'
+readu,1,ETAe
 close,1
 
-help,  eta
-;;;;;read in NOAH ET from readin_chirps_noah_et.pro, only read in 2003-2016!
-help,  eta, evap
-;take the median for 2003-2013 (10yrs) for each month
-;for monthly (not seasonal) analysis
-medEVAP = MEDIAN(Evap[*,*,*,0:9], dimension=4) & help, medEVAP
-medEVAPcube = REBIN(medEVAP,NX, NY, NMOS, NYRS)
+openr,1,indir+'ETA_SA_486_443_12_14_byte.bin'
+readu,1,ETAs
+close,1
 
-;then compute percent of this median for all yrs...
-;PON = (ONDevap/MEDevapCUBE)*100
-PON = (Evap/MEDevapCUBE)*100
-PON(where(PON gt 250)) = 250
+openr,1,indir+'ETA_WA_446_124_12_14_byte.bin'
+readu,1,ETAw
+close,1
 
-month = ['jan', 'feb', 'mar','apr','may','jun','jul','aug','sep','oct','nov','dec']
-
-;ETA=float(ETA)
-
-res=10
-;;;now I just want to plot the observations/PON side by side
-;plot the Noah ET anomalies for a given month for all/one years.
-ncolors = 7
-;RGB_INDICES=[0,50,70,90,110,130,150]
-index = [0,50,70,90,110,130,150];
-ct=colortable(73)
-;w=window()
-TIC
-;;;;buffer is a million times faster for this! don't print to screen!;;;;
-;;;FIGURE FOR PAPER - DON"T MESS UP;;;;;;
- y=n_elements(ETA[0,0,0,*])-1
- m=1 ;zero index 1=feb
-;for y = 0,13 do begin &$
-  tmptr = CONTOUR(PON[*,*,m,y]*mask,FINDGEN(NX)/res+map_ulx, FINDGEN(NY)/res+map_lry, $
-  RGB_TABLE=ct, ASPECT_RATIO=1, Xstyle=1,Ystyle=1, $
-  /FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors)) &$
-  ct[108:108+36,*] = 200  &$
-  tmptr.rgb_table=ct  &$
-  ;tmptr.title = 'SSEBop ETA Feb'  &$
-  ; m1 = MAP('Geographic',limit=[map_lry+20,map_ulx+20,map_uly,map_lrx], /overplot) &$;
-  m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], horizon_thick=1, /overplot)
- ; mycont = MAPCONTINENTS(shapefile, /COUNTRIES,HIRES=1, thick=2) &$
-  m = MAPCONTINENTS(/COUNTRIES,  COLOR = 'black', THICK=1) &$
-  tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
-  tmptr.mapgrid.FONT_SIZE = 10 
-  tmptr.mapgrid.label_position = 0
-   cb = colorbar(target=tmptr,ORIENTATION=1,TAPER=1,/BORDER, TITLE='ETa anomaly %')
-  ;tmptr.save,'/home/almcnall/test.png' &$
-;endfor
-TOC
-;position = x1,y1, x2, y2
-cb = colorbar(target=tmptr,ORIENTATION=1,TAPER=1,/BORDER, TITLE='ETa anomaly %', position=[0.3,0.14,0.7,0.17])
-tmptr.save,'/home/almcnall/FEB_SSEB_ETv2.png'
-
+;;;;;;;;;;get PON values from PON_MED4SSEB.pro;;;;;;;;;;;;;;
+help, PONe, PONs, PONw
 
 ;monthly correlations
 ;these are kinda slow, only calc when needed
@@ -164,27 +126,162 @@ tmptr.save,'/home/almcnall/FEB_SSEB_ETv2.png'
 ;endfor
 ;toc
 
-noahTS = fltarr(nx,ny,nmos*(nyrs-1))
-ssebTS = fltarr(nx,ny,nmos*(nyrs-1))
+;make vectors for correlations
+noahTSe = reform(pone,eNX,eNY, 12*14)
+ssebTSe = reform(etae,eNX,ENY, 12*14)
 
-;this makes it look like i cropped it before.
+noahTSs = reform(pons,sNX,sNY, 12*14)
+ssebTSs = reform(etas,sNX,sNY, 12*14)
+
+noahTSw = reform(ponw,wNX,wNY, 12*14)
+ssebTSw = reform(etaw,wNX,wNY, 12*14)
+
+;ssebTS = ETA_V[*,*,0:155]
+;vicTS = reform(ponV,NX,NY, 12*14)
+;vicTS=vicTS[*,*,0:155]
+
+cormap2e=fltarr(enx,eny)
+cormap2s=fltarr(snx,sny)
+cormap2w=fltarr(wnx,wny)
+
 tic
+nx = enx
+ny = eny
 for x = 0, nx-1 do begin &$
   for y = 0,ny-1 do begin &$
-  noahTS[x,y,*] = reform(pon[x,y,*,0:12],nmos*(nyrs-1)) &$
-  ssebTS[x,y,*] = reform(eta[x,y,*,0:12],nmos*(nyrs-1)) &$
+   cormap2e[x,y,*] = correlate(noahTSe[x,y,0:158], ssebTSe[x,y,0:158]) &$
 endfor &$
 endfor
-toc
 
-cormap2=fltarr(nx,ny)
-tic
+nx = snx
+ny = sny
 for x = 0, nx-1 do begin &$
   for y = 0,ny-1 do begin &$
-  cormap2[x,y] = correlate(noahTS[x,y,*], ssebTS[x,y,*]) &$
+  cormap2s[x,y,*] = correlate(noahTSs[x,y,0:158], ssebTSs[x,y,0:158]) &$
 endfor &$
 endfor
+
+nx = wnx
+ny = wny
+for x = 0, nx-1 do begin &$
+  for y = 0,ny-1 do begin &$
+  cormap2w[x,y,*] = correlate(noahTSw[x,y,0:158], ssebTSw[x,y,0:158]) &$
+endfor &$
+endfor
+
 toc
+;NIORO
+;9.5W 15.64N
+;Wankama
+;13.5 2.6 
+;Ziro, Burkina Faso
+;11.640212N, -1.908075W
+;Ouemae Benin
+;(9 ° 5N and 2 ° E) 
+
+res=0.10 ;0.10
+wxind = FLOOR((2.632 - wmap_ulx) / res)
+wyind = FLOOR((13.6456 - wmap_lry) / res)
+
+nxind = FLOOR((abs(wmap_ulx)-9.5) / res)
+nyind = FLOOR((15.6456 - wmap_lry) / res)
+
+zxind = FLOOR((abs(wmap_ulx)-1.9) / res)
+zyind = FLOOR((11.6456 - wmap_lry) / res)
+
+oxind = FLOOR((2 - wmap_ulx) / res)
+oyind = FLOOR((9.5 - wmap_lry) / res)
+
+
+;these places look crazy like jeanne's analysis
+xind = oxind
+yind = oyind
+p1 = plot(ssebTSw[xind,yind,0:158])
+p1 = plot(noahTSw[xind,yind,0:158], /overplot, 'b')
+print, r_correlate(ssebTSw[xind,yind,0:158], noahTSw[xind,yind,0:158])
+p1 = plot(noahTSw[xind,yind,*],ssebTSw[xind,yind,*],'c*', /overplot )
+
+
+print, r_correlate(ssebTS[xind,yind,*],vicTS[xind,yind,*])
+;make a histogram of some locations:
+pdf = HISTOGRAM(noahTSw[xind,yind,*], LOCATIONS=xbin, nbins=10)
+phisto = BARPLOT(xbin, pdf,/current, layout=[1,3,2], title='Benin-Noah')
+
+
+;;;STICK with CONTOUR;;;;;;;
+cormap2 = cormap2s
+map_ulx = smap_ulx & min_lon = map_ulx
+map_lry = smap_lry & min_lat = map_lry
+map_uly = smap_uly & max_lat = map_uly
+map_lrx = smap_lrx & max_lon = map_lrx
+mask = smask
+NX = sNX
+NY = sNY
+
+shapefile = '/discover/nobackup/almcnall/GAUL_2013_2012_0.shapefiles/G2013_2012_0.shp'
+;w = WINDOW(DIMENSIONS=[700,900]);works for EA 700x900
+w = WINDOW(DIMENSIONS=[1200,500]);works for EA 700x900
+
+mlim = [min_lat,min_lon,max_lat,max_lon]
+m1 = MAP('Geographic',LIMIT=mlim,/CURRENT,horizon_thick=1)
+xsize=0.10
+ysize=0.10
+
+index = [-0.1,0,0.3,0.5,0.7,0.9]
+ncolors = n_elements(index) 
+
+tmpgr = CONTOUR(cormap2*mask, $
+  FINDGEN(NX)*(xsize) + min_lon, FINDGEN(NY)*(ysize) + min_lat, $
+  RGB_TABLE=64, /FILL, ASPECT_RATIO=1, BACKGROUND_COLOR='white', $
+  C_VALUE=index, RGB_INDICES=FIX(FINDGEN(ncolors)*255./(ncolors-1)), $
+  MAP_PROJECTION='Geographic', XSTYLE=1, YSTYLE=1, /OVERPLOT)
+  tmpgr.mapgrid.linestyle = 6 & tmpgr.mapgrid.label_position = 0
+  cb = COLORBAR(TARGET=tmpgr, POSITION=[0.05,0.05,0.95,0.09],FONT_SIZE=11,/BORDER)
+  ;cb = COLORBAR(TARGET=tmpgr, POSITION=[0.05,0.2,0.95,0.25],FONT_SIZE=11,/BORDER)
+  mc = MAPCONTINENTS(shapefile, /COUNTRIES,COLOR=[0,0,0],FILL_BACKGROUND=0,LIMIT=mlim)
+  tmpgr.save,'/home/almcnall/figs4SciData/NOAH_SSEB_WA_1027.png'
+close
+
+;;;;SOUTHERN AFRICA FEB figure;;;;;
+;plots for individual months..used in the Usage notes section (move down)
+month = ['jan', 'feb', 'mar','apr','may','jun','jul','aug','sep','oct','nov','dec']
+;use loop if you want to plot them all..
+TIC
+;;;;buffer is a million times faster for this! don't print to screen!;;;;
+;;;FIGURE FOR PAPER - DON"T MESS UP;;;;;;
+w = WINDOW(DIMENSIONS=[1100,900]);works for EA 700x900
+mlim = [min_lat,min_lon,max_lat,max_lon]
+m1 = MAP('Geographic',LIMIT=mlim,/CURRENT,horizon_thick=1)
+xsize=0.10
+ysize=0.10
+
+index = [0,50,70,90,110,130,150];
+ncolors = n_elements(index) 
+CT=COLORTABLE(73) ;keep this so i can change values.
+y=n_elements(ETAs[0,0,0,*])-1
+m=1 ;zero index 1=feb
+;for y = 0,13 do begin &$
+tmptr = CONTOUR(PONs[*,*,m,y]*mask,$
+  FINDGEN(NX)*(xsize)+ min_lon, FINDGEN(NY)*(ysize)+min_lat, BACKGROUND_COLOR='WHITE', $
+  RGB_TABLE=CT, /FILL, ASPECT_RATIO=1, Xstyle=1,Ystyle=1, /overplot, $
+  C_VALUE=index, RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors)) &$
+  ct[108:108+36,*] = 200  &$
+  tmptr.rgb_table=ct  &$
+  tmptr.mapgrid.linestyle = 6 & tmptr.mapgrid.label_position = 0
+; mycont = MAPCONTINENTS(shapefile, /COUNTRIES,HIRES=1, thick=2) &$
+;  tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
+;  tmptr.mapgrid.FONT_SIZE = 10
+;tmptr.mapgrid.label_position = 0; x1, y1, x2, y2
+  ;cb = colorbar(target=tmptr,ORIENTATION=1,TAPER=1,/BORDER, font_size=12, TITLE='ETa anomaly %', POSITION=[.96,.35,0.99,.75])
+  mc = MAPCONTINENTS(shapefile, /COUNTRIES,COLOR=[0,0,0],FILL_BACKGROUND=0,LIMIT=mlim, thick=2)
+  tmptr.save,'/home/almcnall/figs4SciData/NOAHpon_FEB_2016_1027.png'
+;endfor
+TOC
+
+;position = x1,y1, x2, y2
+cb = colorbar(target=tmptr,ORIENTATION=1,TAPER=1,/BORDER, TITLE='ETa anomaly %', position=[0.3,0.14,0.7,0.17])
+tmptr.save,'/home/almcnall/FEB_SSEB_ETv2.png'
+
 
 
 ;how do i get the tickmarks in the right spot. And how about a boarder?
@@ -208,32 +305,6 @@ toc
 ;  p1.title = txt[i] &$
 ;  p1.font_size=20 &$
 ;  cb = COLORBAR(target=p1,ORIENTATION=0,/BORDER_ON,font_size=24, position=[0.3,0.10,0.7,0.13])
-
-;;;STICK with CONTOUR;;;;;;;
-;index = [-0.1,0,0.3,0.4,0.5,0.6,0.7,0.8, 0.9]
-shapefile ='/discover/nobackup/almcnall/G2013_2012_0.shp' 
-index = [-0.1,0,0.3,0.5,0.7,0.9]
-
-ncolors = n_elements(index) ;is this right or do i add some?
-;index = [-1,0.4,0.5,0.6,0.7,0.8]
-tmptr = CONTOUR(cormap2,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
-  ASPECT_RATIO=1, Xstyle=1,Ystyle=1, $
-  RGB_TABLE=64,/FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors))  &$
-  m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot,horizon_thick=1) &$;
-   mycont = MAPCONTINENTS(/COUNTRIES, thick=1) &$
-  ;why doesn't this work??
-  ;m = MAPCONTINENTS(/COUNTRIES, COLOR = 'black',THICK=1) &$
-  tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
-  tmptr.mapgrid.label_position = 0  &$
-  tmptr.mapgrid.FONT_SIZE = 10 &$
-  ;[X1, Y1, X2, Y2]
-  cb = colorbar(target=tmptr,ORIENTATION=0, /BORDER,TAPER=1,THICK=0, TITLE='correlation', position=[0.3,0.2,0.7,0.24], font_size=10)
-  ;cb = colorbar(target=tmptr,ORIENTATION=1, /BORDER,TAPER=1,THICK=0, TITLE='correlation', font_size=10)
-
-tmptr.save,'/home/almcnall/figs4SciData/SM_CCI_ACORR_SA.png'
-close
-
-
 
 
 
@@ -568,6 +639,12 @@ kyind = FLOOR( (-17 - map_lry) / 0.1)
 ;Mpala Kenya:
 mxind = FLOOR( (36.8701 - map_ulx)/ 0.1)
 myind = FLOOR( (0.4856 - map_lry) / 0.1)
+
+;Lake Victoria input
+;-2.636753, 31.312902
+
+vxind = FLOOR( (33.3 - map_ulx)/ 0.1)
+vyind = FLOOR( (-2 - map_lry) / 0.1)
 
 ;Adwa, tigray region (14,39.4) NDVI has higher freq variation that soil moisture here
 txind = FLOOR( (39 - map_ulx)/ 0.1)

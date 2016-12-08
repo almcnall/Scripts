@@ -29,6 +29,21 @@ function get_domain01, domain
       map_uly = 6.35
       map_lry = -37.85
     endif
+    
+    ;Continental Africa (37.85 S - 6.35 N; 6.05 E - 54.55 E)
+    ;SOUTH_WEST_CORNER_LAT = -39.95f ;
+    ;SOUTH_WEST_CORNER_LON = -20.05f ;
+    ;Run domain lower left lat:         -39.950
+    ;Run domain lower left lon:         -20.050
+    ;Run domain upper right lat:         39.950
+    ;Run domain upper right lon:         54.950
+    ;NX = 751, NY = 800
+    if domain eq 'AF' then begin
+      map_ulx = -20.050
+      map_lrx = 54.95
+      map_uly = 39.95
+      map_lry = -39.95
+    endif
 
     ulx = (180.+ map_ulx)*10.
     lrx = (180.+ map_lrx)*10.-1
@@ -37,7 +52,7 @@ function get_domain01, domain
     NX = lrx - ulx + 2
     NY = lry - uly + 2
     
-    params = [NX, NY, map_ulx, map_lrx, map_uly, map_lry]
+    params = [NX, NY, map_ulx, map_lrx, map_uly, map_lry, ulx, lrx, uly, lry]
     return, params
 
 END

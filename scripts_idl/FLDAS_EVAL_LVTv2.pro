@@ -7,6 +7,7 @@ pro FLDAS_EVAL_LVT
 ;5/5/2016 continuing mask effort after LDT issues.
 ;06/06/2016 revist to fix up figures for the paper. I need anom correlation for all domains.
 ;for paths on chg rain and different old plots see fldas_eval_lvtv1
+;10/21/2016 figures for revisions
 
 indir = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/LVT_test/'
 shapefile ='/discover/nobackup/almcnall/G2013_2012_0.shp' 
@@ -15,12 +16,12 @@ shapefile ='/discover/nobackup/almcnall/G2013_2012_0.shp'
 .compile /home/almcnall/Scripts/scripts_idl/get_domain25.pro
 
 ;for all of the ANOM COR with MW SMv2.2 use the following VOI
-VOI = 'Rainf' ;variable of interest 'SoilMoist_v_Rainf', SoilMoist_v_NDVI, Rainf, SoilMoist_v_SoilMoist
+VOI = 'SoilMoist_v_SoilMoist' ;variable of interest 'SoilMoist_v_Rainf', SoilMoist_v_NDVI, Rainf, SoilMoist_v_SoilMoist
 
 
-;ifileE = file_search(indir+'ESACCI/STATS_EA_CM2_v2.2_92_14/LVT_ACORR_FINAL.201501010000.d01.nc') & print, ifileE
-ifileE = file_search(indir+'SPI/STATS_SPI1/SPI_TS.201105010000.d01.nc') & print, ifileE
-ifileE3 = file_search(indir+'SPI/STATS_SPI3/SPI_TS.201105010000.d01.nc') & print, ifileE3
+ifileE = file_search(indir+'ESACCI/STATS_EA_CM2_v2.2_92_14/LVT_ACORR_FINAL.201501010000.d01.nc') & print, ifileE
+;ifileE = file_search(indir+'SPI/STATS_SPI1/SPI_TS.201105010000.d01.nc') & print, ifileE
+;ifileE3 = file_search(indir+'SPI/STATS_SPI3/SPI_TS.201105010000.d01.nc') & print, ifileE3
 
 ifileS = file_search(indir+'ESACCI/STATS_SA_CM2_v2.2_92_14/LVT_ACORR_FINAL.201501010000.d01.nc') & print, ifileS
 ifileW = file_search(indir+'ESACCI/STATS_WA_CM2_v2.2_92_14/LVT_ACORR_FINAL.201501010000.d01.nc') & print, ifileW
@@ -28,26 +29,14 @@ ifileW = file_search(indir+'ESACCI/STATS_WA_CM2_v2.2_92_14/LVT_ACORR_FINAL.20150
 ACORR_E = get_nc(VOI, ifileE)
 ACORR_E(where(ACORR_E lt -10))=!values.f_nan
 
-ACORR_E3 = get_nc(VOI, ifileE3)
-ACORR_E3(where(ACORR_E3 lt -10))=!values.f_nan
+;ACORR_E3 = get_nc(VOI, ifileE3)
+;ACORR_E3(where(ACORR_E3 lt -10))=!values.f_nan
 
 ACORR_S= get_nc(VOI, ifileS)
 ACORR_S(where(ACORR_S lt -10))=!values.f_nan
 
 ACORR_W = get_nc(VOI, ifileW)
 ACORR_W(where(ACORR_W lt -10))=!values.f_nan
-
-;;;RANK CORRELATION WITH NDVI;;;;;
-;VOI = 'SoilMoist_v_NDVI'
-;;ifile = file_search(indir+'LVT_RCORR_NDVI_NOAHSM01_CHIRPSGDAS_2001_2013_EA.nc') & print, ifile ;this needs to be re-done
-;;ifile = file_search(indir+'LVT_RCORR_NDVI_NOAHSM01_RFEGDAS_2001_2013_EA.nc') & print, ifile ;LVT_RCORR_NDVI_NOAHSM01_CHIRPSGDAS_2001_2013_EA.nc
-;;ifile = file_search(indir+'LVT_RCORR_NDVI_NOAHSM01_RFEGDAS_2001_2013_WA.nc') & print, ifile
-;;ifile = file_search(indir+'LVT_RCORR_NDVI_NOAHSM01_RFEGDAS_2001_2013_SA.nc')
-;RCORR_RG = get_nc(VOI, ifile)
-;RCORR_RG(where(RCORR_RG lt -10))=!values.f_nan
-;
-;nx = 486, ny = 443, nz = 33
-;can i replace these with my new code?
 
 ;; params = [NX, NY, map_ulx, map_lrx, map_uly, map_lry]
 params = get_domain01('SA')
@@ -76,8 +65,6 @@ wmap_ulx = params[2]
 wmap_lrx = params[3]
 wmap_uly = params[4]
 wmap_lry = params[5]
-
-;add the bare ground/sparse veg mask
 
 ;;;read in landcover MODE to grab sparse veg mask;;;
 ;;;;eastern, southern africa;;;;;;
@@ -114,60 +101,49 @@ Wmask(water)=!values.f_nan
 acorr_w[95:99]=1.0
 help, acorr_e, acorr_s, acorr_w
 ;specify east, south or west here
-acorr = acorr_e
-map_ulx = emap_ulx
-map_lry = emap_lry
-map_uly = emap_uly
-map_lrx = emap_lrx
-mask = emask
-NX = eNX
-NY = eNY
+;min_lon = MIN(lon)      & max_lon = MAX(lon)
+;min_lat = MIN(lat)      & max_lat = MAX(lat)
+acorr = acorr_w
+map_ulx = wmap_ulx & min_lon = map_ulx
+map_lry = wmap_lry & min_lat = map_lry
+map_uly = wmap_uly & max_lat = map_uly
+map_lrx = wmap_lrx & max_lon = map_lrx
+mask = wmask
+NX = wNX
+NY = wNY
 ;;;;;;;;;this is a CONTOUR plot;;;;;;;;;;;
+;N=23 at 0.352 (0.433 for two tail). 
+;Add significance, greg's plot updates, and south sudanw = WINDOW(DIMENSIONS=[400,600])
+shapefile = '/discover/nobackup/almcnall/GAUL_2013_2012_0.shapefiles/G2013_2012_0.shp'
+;w = WINDOW(DIMENSIONS=[700,900]);works for EA 700x900
+w = WINDOW(DIMENSIONS=[1200,500]);works for EA 700x900
+
+mlim = [min_lat,min_lon,max_lat,max_lon]
+m1 = MAP('Geographic',LIMIT=mlim,/CURRENT,horizon_thick=1)
+xsize=0.10
+ysize=0.10
 ;index = [-0.1,0,0.3,0.5,0.7,0.9]
-index = [-0.1,0,0.3,0.4,0.5,0.6,0.7,0.8, 0.9]
+index = [-0.1,0.35,0.45,0.55,0.65,0.75,0.85]
 
 ncolors = n_elements(index) ;is this right or do i add some?
-;index = [-1,0.4,0.5,0.6,0.7,0.8]
-tmptr = CONTOUR(ACORR*mask,FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
-  ASPECT_RATIO=1, Xstyle=1,Ystyle=1, $
-  RGB_TABLE=64,/FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors))  &$
-  m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot,horizon_thick=1) &$;
- ; mycont = MAPCONTINENTS(shapefile, /COUNTRIES,HIRES=1) &$  
- ;why doesn't this work??
-  m = MAPCONTINENTS(/COUNTRIES, COLOR = 'black',THICK=1) &$
-  tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
-  tmptr.mapgrid.label_position = 0  &$ 
-  tmptr.mapgrid.FONT_SIZE = 10 &$
-  ;[X1, Y1, X2, Y2]
-  cb = colorbar(target=tmptr,ORIENTATION=0, /BORDER,TAPER=1,THICK=0, TITLE='correlation', position=[0.3,0.2,0.7,0.24], font_size=10)
-  ;cb = colorbar(target=tmptr,ORIENTATION=1, /BORDER,TAPER=1,THICK=0, TITLE='correlation', font_size=10)
+tmpgr = CONTOUR(ACORR*mask, $
+  FINDGEN(NX)*(xsize) + min_lon, FINDGEN(NY)*(ysize) + min_lat, $
+  RGB_TABLE=64, /FILL, ASPECT_RATIO=1, BACKGROUND_COLOR='white', $
+  C_VALUE=index, RGB_INDICES=FIX(FINDGEN(ncolors)*255./(ncolors-1)), $
+  MAP_PROJECTION='Geographic', XSTYLE=1, YSTYLE=1, /OVERPLOT)
+  tmpgr.mapgrid.linestyle = 6 & tmpgr.mapgrid.label_position = 0
+  ;position = x1,y1, x2, y2
+  cb = COLORBAR(TARGET=tmpgr, POSITION=[0.05,0.05,0.95,0.09],FONT_SIZE=11,/BORDER)
+  ;cb = COLORBAR(TARGET=tmpgr, POSITION=[0.05,0.2,0.95,0.25],FONT_SIZE=11,/BORDER)
 
-  tmptr.save,'/home/almcnall/figs4SciData/SM_CCI_ACORR_SA.png'
+  mc = MAPCONTINENTS(shapefile, /COUNTRIES,COLOR=[0,0,0],FILL_BACKGROUND=0,LIMIT=mlim)
+  tmpgr.save,'/home/almcnall/figs4SciData/SM_CCI_ACORR_WA_1026.png'
 close
 
- ;;;what does the corresponding IMAGE plot look like?
- ;;plot the SPI image
- ncolors=14
- p1 = image(ACORR_E3, image_dimensions=[nx/10,ny/10], $
-   image_location=[map_ulx,map_lry],RGB_TABLE=70, margin = 0.1)
- rgbind = FIX(FINDGEN(ncolors)*255./(ncolors))  &$  ; set tindex of the colors to be pulled
-   rgbdump = p1.rgb_table & rgbdump = CONGRID(rgbdump[*,rgbind],3,256)  &$ ; just rewrites the discrete colorbar
-   ;rgbdump[*,255] = [255,255,255] &$ ; set map values of zero to white, you can change the color
-   ;rgbdump[*,0] = [255,255,255] &$;[190,190,190] &$
-   p1.rgb_table = rgbdump &$ ; reassign the colorbar to the image
-   p1.MAX_VALUE=3 &$
-   p1.min_value=-3 &$
-   m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot, horizon_thick=1)
- m1.mapgrid.linestyle = 'none' &$  ; could also use 6 here
-   m1.mapgrid.color = [255, 255, 255] &$ ;150
-   m = MAPCONTINENTS( /COUNTRIES,HIRES=1, THICK=2) &$
-   ;p1.title = txt[i] &$
-   p1.font_size=20 &$
-   cb = COLORBAR(target=p1,ORIENTATION=1,/BORDER,TAPER=1, THICK=0,font_size=24)
     
     ;;;;;;plot the CSV time series files;;;;;;;;;;;;;;;;;;;
-    indir = '/home/sandbox/people/mcnally/FLDAS_EVAL/'
-;LVT_test/ESACCI/STATS_EA_CM2_v2.2_92_14
+    ;indir = '/home/sandbox/people/mcnally/FLDAS_EVAL/'
+    indir = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/LVT_test/'
 
   ifile1 = file_search(indir+'MEAN_GABARONE_NOAH_CCI.dat')
   ifile1 = file_search(indir+'MEAN_KRUGER_NOAH_CCI.dat');MEAN_ALL_SA_CCI.dat
@@ -245,12 +221,18 @@ p1=plot(ET)
 p1=plot(NDVI, /overplot, 'b')
 
   w=window()
-  p1 = plot(mean(ccismW,dimension=2,/nan),/buffer,'c', name= 'CCI-SM')
-  p2 = plot(mean(wank,dimension=2), 'b', linestyle=0,  /buffer, /overplot, name = 'wankama')
+  p1 = plot(mean(ccismW,dimension=2,/nan),'c', name= 'CCI-SM')
+  p2 = plot(mean(wank,dimension=2), 'b', linestyle=0, /overplot, name = 'wankama')
   ;p3 = plot(mean(niro,dimension=2), 'r', linestyle=0, /buffer, /overplot, name = 'niro')
   ;p4 = plot(mean(ccismN,dimension=2), 'orange', linestyle=0, /buffer, /overplot, name = 'niro')
-  p5 = plot(mean(all,dimension=2), 'g', linestyle=0,/buffer,  /overplot, name = 'all')
+  p5 = plot(mean(all,dimension=2), 'g', linestyle=0,  /overplot, name = 'all')
   p6 = plot(mean(ccismA,dimension=2), 'yellow', linestyle=0,/buffer,  /overplot, name = 'all')
+  
+  ;this suggests that they both tend to get the same clim but something happend yr to year?
+  print, correlate(mean(ccismW,dimension=2,/nan),mean(wank,dimension=2,/nan))
+  p1=plot(ccismW, wank, '*')
+  
+  
 p6.save,'/home/almcnall/test.png'
 
   p2.xrange=[0,360]

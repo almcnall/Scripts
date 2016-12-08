@@ -17,7 +17,8 @@ endmo = 12
 nmos = endmo - startmo+1
 
 ;; params = [NX, NY, map_ulx, map_lrx, map_uly, map_lry]
-params = get_domain01('SA')
+domain = string('Noah33_CHIRPS_MERRA2_EA')
+params = get_domain01('EA')
 
 NX = params[0]
 NY = params[1]
@@ -27,9 +28,8 @@ map_uly = params[4]
 map_lry = params[5]
 
 ;;;;;;use hymap runoff vs. non-routed;;;;
-data_dir='/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_SA/HYMAP/OUTPUT_SA1981/post/'
-;data_dir='/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_SA/post/'
-
+data_dir='/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/'+domain+'/HYMAP/OUTPUT_EA1981/post/'
+;data_dir='/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/'+domain+'/post/'
 
 Qsub = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
 Qsuf = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
@@ -43,8 +43,9 @@ for yr=startyr,endyr do begin &$
   m = m-12 &$
   y = y+1 &$
 endif &$
-ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_H_SA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
-;ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_C_SA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
+
+ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_H_EA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
+;ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_C_EA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
 
 VOI = 'RiverStor_tavg' &$ ;Qsb_tavg
 ;VOI = 'Qs_tavg' &$
@@ -64,3 +65,5 @@ Qsub(where(Qsub lt 0)) = !values.f_nan
 RO = Qsuf+Qsub
 RO_CHIRPS01 = RO
 delvar, RO, Qsuf, Qsub, qs, qsb
+
+RO_annual = mean(RO_CHIRPS01, dimension = 3, /nan) & help, RO_annual
