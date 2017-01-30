@@ -1,6 +1,6 @@
 ;;;WORKSHEET FOR ANALYSIS OF SCENARIOS
 ;; greg husak's original code in worksheet.pro
-
+;; 1/30/17 revisit for routine ESP...get countmap from make_countmap.pro, or readin.
 
    ; get counts of different thresholds
 ;   lo_thresh = 0.85		; set low threshold
@@ -21,15 +21,17 @@
 ;endfor
 ;;map stuff
 
-;East Africa WRSI/Noah window
-map_ulx = 22.  & map_lrx = 51.35
-map_uly = 22.95  & map_lry = -11.75
+params = get_domain01('EA')
+;params = get_domain01('AF')
 
-ulx = (180.+map_ulx)*10.  & lrx = (180.+map_lrx)*10.-1
-uly = (50.-map_uly)*10.   & lry = (50.-map_lry)*10.-1
-NX = lrx - ulx + 2 
-NY = lry - uly + 2
-nsims = 100
+
+NX = params[0]
+NY = params[1]
+map_ulx = params[2]
+map_lrx = params[3]
+map_uly = params[4]
+map_lry = params[5]
+nsims = 1054
 
 ;;east africa bare soil/water mask;;
 
@@ -42,9 +44,9 @@ LC = get_nc(VOI, ifile)
 bare = where(LC[*,*,15] eq 1, complement=other)
 water = where(LC[*,*,16] eq 1, complement=other)
 
-mask = BYTARR(NX,NY)+1
-mask(bare) = 0
-mask(water) = 0
+mask = fltarr(NX,NY)+1
+mask(bare) = !values.f_nan
+mask(water) = !values.f_nan
 
 mask3 = rebin(mask,nx,ny,3)
 
@@ -66,6 +68,7 @@ mask3 = rebin(mask,nx,ny,3)
  ;  map_lry = 40.05 - (lry * 0.1)
 
    ; now read in the data and map it
+   ifile = '/home/almcnall/IDLplots/countmap_294_348_3_SM01.bin'
    ifile = '/home/almcnall/Nov2015_countmap_294_348_3.bin'
    ifile = '/home/almcnall/Dec2015_countmap_294_348_3.bin'
    ifile = '/home/almcnall/Jan2015_countmap_294_348_3.bin'
@@ -74,8 +77,11 @@ mask3 = rebin(mask,nx,ny,3)
    openr,1,ifile
    readu,1,ct_cube
    close,1
-   ct_cube = ct_cube*mask3
+   ct_cube = countmap
+   ;does this have to be a bytarr?
    t_class = BYTARR(NX,NY)
+   ;t_class = FLTARR(NX,NY)
+
    
    ; set the triangle for each class
    t_class(where(ct_cube[*,*,1] ge most_cut)) = 1
@@ -117,5 +123,5 @@ mask3 = rebin(mask,nx,ny,3)
      COLOR = [0, 0, 0], THICK=2, $
      FILL_BACKGROUND = 0)
 
-   wmap.save, '/home/almcnall/DecESP.png'
+   wmap.save, '/home/almcnall/IDLplots/test.png'
 endfor

@@ -7,40 +7,33 @@
 ; (2) do ESPvanilla 
 ; (3) make/find map of percentile thresholds (see make_permap.pro)
 ; (4) generate 'count' maps that computes number of times a ESP is above/below a given threhold
+; 1/28/17 revisit...
 
 .compile /home/almcnall/Scripts/scripts_idl/get_nc.pro
 
-;.compile /home/source/mcnally/scripts_idl/get_nc.pro
+;startyr = 1982 ;start with 1982 since no data in 1981
+;endyr = 2015
+;nyrs = endyr-startyr+1
+;
+;;read in all months and then just select the ones I want. Doesn't deal with subsets well. Although a lot of that data doesn't exsit.
+;startmo = 1
+;endmo = 12
+;nmos = endmo - startmo+1
+;ens = 100 
 
-startyr = 1982 ;start with 1982 since no data in 1981
-endyr = 2015
-nyrs = endyr-startyr+1
 
-;read in all months and then just select the ones I want. Doesn't deal with subsets well. Although a lot of that data doesn't exsit.
-startmo = 1
-endmo = 12
-nmos = endmo - startmo+1
-ens = 100
+;; params = [NX, NY, map_ulx, map_lrx, map_uly, map_lry]
+params = get_domain01('EA')
 
-;West Africa (5.35 N - 17.65 N; 18.65 W - 25.85 E)
-; west africa domain
-;map_ulx = -18.65 & map_lrx = 25.85
-;map_uly = 17.65 & map_lry = 5.35
+eNX = params[0]
+eNY = params[1]
+emap_ulx = params[2]
+emap_lrx = params[3]
+emap_uly = params[4]
+emap_lry = params[5]
 
-;East Africa WRSI/Noah window
-map_ulx = 22.  & map_lrx = 51.35
-map_uly = 22.95  & map_lry = -11.75
-
-;Southern Africa WRSI/Noah window
-;Southern Africa (37.85 S - 6.35 N; 6.05 E - 54.55 E) 
-;NX = 486, NY = 443
-;map_ulx = 6.05  & map_lrx = 54.55
-;map_uly = 6.35  & map_lry = -37.85
-
-ulx = (180.+map_ulx)*10.  & lrx = (180.+map_lrx)*10.-1
-uly = (50.-map_uly)*10.   & lry = (50.-map_lry)*10.-1
-NX = lrx - ulx + 2 
-NY = lry - uly + 2
+NX = eNX
+NY = eNY
 
 ;;;read in landcover MODE to grab sparse veg mask;;;
 indir = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/Param_Noah3.3/'
@@ -55,25 +48,20 @@ mask(bare)=!values.f_nan
 mask(water)=!values.f_nan
 
 ;;generate the or read in the threshold maps from make_permap.pro
-;;so far only SM01 is available.
-;permap = fltarr(nx, ny, 12, 3)
-;ifile3 = file_search('/home/almcnall/SM01_permap_294_348_12_3.bin')
-;openr, 1, ifile3
-;readu, 1, permap
-;close,1
-;
-;generate or readin the countmap from the ESP forecast 
+;generate or readin the countmap from the ESP forecast make_countmap.pro
 ;delvar, sm, sm01, sm02, qsub, qsuf, var, npix
 
 ;what do I need to plot these?
 ;;;SKIP To HERE;;;;;;
 countmap = fltarr(NX,NY,3)*0
 ;i can also read in Oct2015_countmap_294_348_3.bin start here - tomorrow.
-ifile = file_search('/home/almcnall/Oct2015_countmap_294_348_3.bin')
+;ifile = file_search('/home/almcnall/Oct2015_countmap_294_348_3.bin')
+
+ifile = file_search('/home/almcnall/IDLplots/countmap_294_348_3_SM01.bin')
 openr,1,ifile
 readu,1,countmap
 close,1
-octCM=countmap
+janCM=countmap
 
 ifile = file_search('/home/almcnall/Nov2015_countmap_294_348_3.bin')
 openr,1,ifile
@@ -117,21 +105,24 @@ CM=novCM
 ;c=colorbar(target=p4)
 ;p1.save, '/home/almcnall/test.png'
 
-;;;;;;what do i want this plot to look like?;;;;;;;;
-;;purple triple plots;;;
-month = ['oct', 'nov', 'dec', 'jan']
-  ncolors = 6
-  RGB_INDICES=[ 10, 20, 30, 35, 45, 55] ;..these values are nothing like what i had before..
+;;;;;;can i use plot east africa.pro for this?;;;;;;;;
+;;purple triple plots - not sure i want to work on these...
+month = ['jan']
+
+  ;RGB_INDICES=[ 10, 20, 30, 35, 45, 55] ;what are the breaks for a particular count? greg's triangle computes this.
+  ;351,351,351 = equal probable 
+  rgb_indices = [351, 720, 1000]
+  n_colors = n_elements(rgb_indices)
   index = rgb_indices
   ct=colortable(51)
 ;for i = 0,11 do begin &$
 i = 0 ; dry, wet, percentile
-j = 3 ; month
+j = 0 ; month
 print, i &$
-  tmptr = CONTOUR(CM[*,*,0],FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
+  tmptr = CONTOUR(JanCM[*,*,0],FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
     RGB_TABLE=ct, ASPECT_RATIO=1, Xstyle=1,Ystyle=1,$ ;3x256 array
     /FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors), $
-    TITLE=month[j],layout=[3,1,1], /CURRENT, /BUFFER)  &$
+    TITLE=month[j],layout=[3,1,1], /CURRENT)  &$
    ; TITLE='Jan',/BUFFER)  &$
   m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot) &$;
  ; m1 = MAP('Geographic',limit=[map_lry+15,map_ulx+10,map_uly,map_lrx], /overplot) &$;
@@ -140,7 +131,7 @@ print, i &$
     tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
     tmptr.mapgrid.FONT_SIZE = 0 &$
     
-    tmptr = CONTOUR(CM[*,*,2],FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
+    tmptr = CONTOUR(janCM[*,*,2],FINDGEN(NX)/10.+map_ulx, FINDGEN(NY)/10.+map_lry, $ ;
     RGB_TABLE=ct, ASPECT_RATIO=1, Xstyle=1,Ystyle=1,$ ;3x256 array
     /FILL, C_VALUE=index,RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors), $
     TITLE=month[j],layout=[3,1,2], /CURRENT, /BUFFER)  &$
@@ -152,6 +143,7 @@ print, i &$
     tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
     tmptr.mapgrid.FONT_SIZE = 0    
 cb = colorbar(target=tmptr,ORIENTATION=0,TAPER=1,/BORDER) &$
+  
 
 ;i could read in all of the SM percentile or interest
 ;i need a different colorbar here
@@ -169,7 +161,7 @@ index=rgb_indices
 cb = colorbar(target=p2,ORIENTATION=1,TAPER=1,/BORDER, TEXTPOS=1)
 
 
-p2.save,'/home/almcnall/test.png'
+temp.save,'/home/almcnall/IDLplots/test.png'
 close
 
 

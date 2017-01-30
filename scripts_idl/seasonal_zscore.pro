@@ -2,6 +2,9 @@
 ;if i break the yr up into 3month blocks i will have 4 periods per yr
 ;this code could be generalize dot produce 1 month or 3 month cubes but for now
 ;one month cubes are in ECV_eval and the 3 month cubes are here
+;1/24/17 maybe i can update this script for chemonics needs...
+;1/28/17 not recommended using zscores due to the non-normal distribution of the data, esp when rank is the goal
+; see greg's method as an alternative...
 
 ;from ECV_eval_paper.pro, where does vmask come from? i think i start from 1992? these are the full 32 yrs
 ;NDVICUBE92 = NDVICUBE2[*,*,*,startyr-1982:endyr-1982]
@@ -17,48 +20,82 @@ ny = dims[1]
 ;nx = dims[0]
 ;ny = dims[1]
 
+HELP, SM01, SM02, smm3
+dims = size(SM01, /dimensions)
+nx = dims[0]
+ny = dims[1]
 
-sZMAP_MW = fltarr(NX,NY,4,NYRS)*!values.f_nan
-sECV = fltarr(NX,NY,4,NYRS)*!values.f_nan
+;sZMAP_MW = fltarr(NX,NY,4,NYRS)*!values.f_nan
+;sECV = fltarr(NX,NY,4,NYRS)*!values.f_nan
+;
+;sZMAP_CS = fltarr(NX,NY,4,NYRS)*!values.f_nan
+;sVIC = fltarr(NX,NY,4,NYRS)*!values.f_nan
+;
+;sZMAP_VG = fltarr(NX,NY,4,NYRS)*!values.f_nan
+;sNDV = fltarr(NX,NY,4,NYRS)*!values.f_nan
 
-sZMAP_CS = fltarr(NX,NY,4,NYRS)*!values.f_nan
-sVIC = fltarr(NX,NY,4,NYRS)*!values.f_nan
+;JFM, AMJ, JAS, OND
+sZMAP_CM01 = fltarr(NX,NY,4,NYRS)*!values.f_nan
+sNOH01 = fltarr(NX,NY,4,NYRS)*!values.f_nan
+
+sZMAP_CM02 = fltarr(NX,NY,4,NYRS)*!values.f_nan
+sNOH02 = fltarr(NX,NY,4,NYRS)*!values.f_nan
 
 sZMAP_CM = fltarr(NX,NY,4,NYRS)*!values.f_nan
 sNOH = fltarr(NX,NY,4,NYRS)*!values.f_nan
 
-sZMAP_VG = fltarr(NX,NY,4,NYRS)*!values.f_nan
-sNDV = fltarr(NX,NY,4,NYRS)*!values.f_nan
+NOAHCUBE01 = SM01
+NOAHCUBE02 = SM02
+NOAHCUBE = SMM3
 
-;JFM, AMJ, JAS, OND
-sVIC[*,*,0,*] = mean(VICCUBE[*,*,0:2,startyr-1982:endyr-1982],dimension=3,/nan)
-sVIC[*,*,1,*] = mean(VICCUBE[*,*,3:5,startyr-1982:endyr-1982],dimension=3,/nan)
-sVIC[*,*,2,*] = mean(VICCUBE[*,*,6:8,startyr-1982:endyr-1982],dimension=3,/nan)
-sVIC[*,*,3,*] = mean(VICCUBE[*,*,9:11,startyr-1982:endyr-1982],dimension=3,/nan)
+sNOH01[*,*,0,*] = mean(NOAHCUBE01[*,*,0:2,startyr-1982:endyr-1982],dimension=3,/nan)
+sNOH01[*,*,1,*] = mean(NOAHCUBE01[*,*,3:5,startyr-1982:endyr-1982],dimension=3,/nan)
+sNOH01[*,*,2,*] = mean(NOAHCUBE01[*,*,6:8,startyr-1982:endyr-1982],dimension=3,/nan)
+sNOH01[*,*,3,*] = mean(NOAHCUBE01[*,*,9:11,startyr-1982:endyr-1982],dimension=3,/nan)
 
+sNOH02[*,*,0,*] = mean(NOAHCUBE02[*,*,0:2,startyr-1982:endyr-1982],dimension=3,/nan)
+sNOH02[*,*,1,*] = mean(NOAHCUBE02[*,*,3:5,startyr-1982:endyr-1982],dimension=3,/nan)
+sNOH02[*,*,2,*] = mean(NOAHCUBE02[*,*,6:8,startyr-1982:endyr-1982],dimension=3,/nan)
+sNOH02[*,*,3,*] = mean(NOAHCUBE02[*,*,9:11,startyr-1982:endyr-1982],dimension=3,/nan)
+
+;all 4 layers
 sNOH[*,*,0,*] = mean(NOAHCUBE[*,*,0:2,startyr-1982:endyr-1982],dimension=3,/nan)
 sNOH[*,*,1,*] = mean(NOAHCUBE[*,*,3:5,startyr-1982:endyr-1982],dimension=3,/nan)
 sNOH[*,*,2,*] = mean(NOAHCUBE[*,*,6:8,startyr-1982:endyr-1982],dimension=3,/nan)
 sNOH[*,*,3,*] = mean(NOAHCUBE[*,*,9:11,startyr-1982:endyr-1982],dimension=3,/nan)
 
-sNDV[*,*,0,*] = mean(NDVICUBE2[*,*,0:2,startyr-1982:endyr-1982],dimension=3,/nan)
-sNDV[*,*,1,*] = mean(NDVICUBE2[*,*,3:5,startyr-1982:endyr-1982],dimension=3,/nan)
-sNDV[*,*,2,*] = mean(NDVICUBE2[*,*,6:8,startyr-1982:endyr-1982],dimension=3,/nan)
-sNDV[*,*,3,*] = mean(NDVICUBE2[*,*,9:11,startyr-1982:endyr-1982],dimension=3,/nan)
+delvar, SM01, SM02, SM03, SM04, SMM3, NOAHCUBE01, NOAHCUBE02, NOAHCUBE
+;sNDV[*,*,0,*] = mean(NDVICUBE2[*,*,0:2,startyr-1982:endyr-1982],dimension=3,/nan)
+;sNDV[*,*,1,*] = mean(NDVICUBE2[*,*,3:5,startyr-1982:endyr-1982],dimension=3,/nan)
+;sNDV[*,*,2,*] = mean(NDVICUBE2[*,*,6:8,startyr-1982:endyr-1982],dimension=3,/nan)
+;sNDV[*,*,3,*] = mean(NDVICUBE2[*,*,9:11,startyr-1982:endyr-1982],dimension=3,/nan)
+;
+;sECV[*,*,0,*] = mean(ECVCUBE[*,*,0:2,startyr-1982:endyr-1982],dimension=3,/nan)
+;sECV[*,*,1,*] = mean(ECVCUBE[*,*,3:5,startyr-1982:endyr-1982],dimension=3,/nan)
+;sECV[*,*,2,*] = mean(ECVCUBE[*,*,6:8,startyr-1982:endyr-1982],dimension=3,/nan)
+;sECV[*,*,3,*] = mean(ECVCUBE[*,*,9:11,startyr-1982:endyr-1982],dimension=3,/nan)
+;
+;sVIC[*,*,0,*] = mean(VICCUBE[*,*,0:2,startyr-1982:endyr-1982],dimension=3,/nan)
+;sVIC[*,*,1,*] = mean(VICCUBE[*,*,3:5,startyr-1982:endyr-1982],dimension=3,/nan)
+;sVIC[*,*,2,*] = mean(VICCUBE[*,*,6:8,startyr-1982:endyr-1982],dimension=3,/nan)
+;sVIC[*,*,3,*] = mean(VICCUBE[*,*,9:11,startyr-1982:endyr-1982],dimension=3,/nan)
 
-sECV[*,*,0,*] = mean(ECVCUBE[*,*,0:2,startyr-1982:endyr-1982],dimension=3,/nan)
-sECV[*,*,1,*] = mean(ECVCUBE[*,*,3:5,startyr-1982:endyr-1982],dimension=3,/nan)
-sECV[*,*,2,*] = mean(ECVCUBE[*,*,6:8,startyr-1982:endyr-1982],dimension=3,/nan)
-sECV[*,*,3,*] = mean(ECVCUBE[*,*,9:11,startyr-1982:endyr-1982],dimension=3,/nan)
-
-;4 season cubes
+;;;;;;;4 season cubes of seasonal z-scores;;;;;;;;;;
 for X = 0,NX-1 do begin &$
   for Y = 0,NY-1 do begin &$
-  sZMAP_CS[x,y,*,*] = standardize(reform(sVIC[X,Y,*,*])) &$
+  ;sZMAP_CS[x,y,*,*] = standardize(reform(sVIC[X,Y,*,*])) &$
+  sZMAP_CM01[x,y,*,*] = standardize(reform(sNOH01[X,Y,*,*])) &$
+  sZMAP_CM02[x,y,*,*] = standardize(reform(sNOH02[X,Y,*,*])) &$
   sZMAP_CM[x,y,*,*] = standardize(reform(sNOH[X,Y,*,*])) &$
-  sZMAP_VG[x,y,*,*] = standardize(reform(sNDV[X,Y,*,*])) &$
+
+  ;sZMAP_VG[x,y,*,*] = standardize(reform(sNDV[X,Y,*,*])) &$
 endfor &$
 endfor
+
+;tidy up maybe not crash...
+delvar, sNOAH01, SNOAH02, sNOH
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;MICROWAVE has to be done 'by hand' since there are missing values, these are wrong...
 AVGMW = FLTARR(NX,NY,4)*!values.f_nan

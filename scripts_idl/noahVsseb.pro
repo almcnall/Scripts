@@ -89,7 +89,7 @@ Wmask(bare)=!values.f_nan
 Wmask(water)=!values.f_nan
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;See clipssebtoeros.pro for SSEB subsetting routine
+;;See clipssebtoeros.pro for SSEB subsetting routine...this doesn't look like real-time updates!
 indir = '/discover/nobackup/projects/fame/Validation/SSEB/ETA_AFRICA/'
 
 ETAe = bytarr(eNX,eNY,12,(endyr-startyr)+1)
@@ -242,7 +242,21 @@ tmpgr = CONTOUR(cormap2*mask, $
   tmpgr.save,'/home/almcnall/figs4SciData/NOAH_SSEB_WA_1027.png'
 close
 
+;-----------------------------------
 ;;;;SOUTHERN AFRICA FEB figure;;;;;
+;-----------------------------------
+;;;STICK with CONTOUR;;;;;;;
+map_ulx = smap_ulx & min_lon = map_ulx
+map_lry = smap_lry & min_lat = map_lry
+map_uly = smap_uly & max_lat = map_uly
+map_lrx = smap_lrx & max_lon = map_lrx
+mask = smask
+NX = sNX
+NY = sNY
+
+shapefile = '/discover/nobackup/almcnall/GAUL_2013_2012_0.shapefiles/G2013_2012_0.shp'
+
+
 ;plots for individual months..used in the Usage notes section (move down)
 month = ['jan', 'feb', 'mar','apr','may','jun','jul','aug','sep','oct','nov','dec']
 ;use loop if you want to plot them all..
@@ -275,12 +289,55 @@ tmptr = CONTOUR(PONs[*,*,m,y]*mask,$
   ;cb = colorbar(target=tmptr,ORIENTATION=1,TAPER=1,/BORDER, font_size=12, TITLE='ETa anomaly %', POSITION=[.96,.35,0.99,.75])
   mc = MAPCONTINENTS(shapefile, /COUNTRIES,COLOR=[0,0,0],FILL_BACKGROUND=0,LIMIT=mlim, thick=2)
   tmptr.save,'/home/almcnall/figs4SciData/NOAHpon_FEB_2016_1027.png'
+
 ;endfor
 TOC
 
 ;position = x1,y1, x2, y2
 cb = colorbar(target=tmptr,ORIENTATION=1,TAPER=1,/BORDER, TITLE='ETa anomaly %', position=[0.3,0.14,0.7,0.17])
 tmptr.save,'/home/almcnall/FEB_SSEB_ETv2.png'
+
+;-----------------------------------
+;;;;East AFRICA most recent figure;;;;;
+;-----------------------------------
+;plots for individual months..used in the Usage notes section (move down)
+month = ['jan', 'feb', 'mar','apr','may','jun','jul','aug','sep','oct','nov','dec']
+;use loop if you want to plot them all..
+TIC
+;;;;buffer is a million times faster for this! don't print to screen!;;;;
+w = WINDOW(DIMENSIONS=[1100,900]);works for EA 700x900
+mlim = [min_lat,min_lon,max_lat,max_lon]
+m1 = MAP('Geographic',LIMIT=mlim,/CURRENT,horizon_thick=1)
+xsize=0.10
+ysize=0.10
+
+index = [0,50,70,90,110,130,150];
+ncolors = n_elements(index)
+CT=COLORTABLE(73) ;keep this so i can change values.
+y=n_elements(ETAe[0,0,0,*])-1
+m=10 ;zero index 1=feb
+;for y = 0,13 do begin &$
+;tmptr = CONTOUR(ETAe[*,*,m,y]*mask,$
+tmptr = CONTOUR(PONe[*,*,m,y]*mask,$
+  FINDGEN(NX)*(xsize)+ min_lon, FINDGEN(NY)*(ysize)+min_lat, BACKGROUND_COLOR='WHITE', $
+  RGB_TABLE=CT, /FILL, ASPECT_RATIO=1, Xstyle=1,Ystyle=1, /overplot, $
+  C_VALUE=index, RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors)) &$
+  ct[108:108+36,*] = 200  &$
+  tmptr.rgb_table=ct  &$
+  tmptr.mapgrid.linestyle = 6 & tmptr.mapgrid.label_position = 0
+; mycont = MAPCONTINENTS(shapefile, /COUNTRIES,HIRES=1, thick=2) &$
+;  tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
+;  tmptr.mapgrid.FONT_SIZE = 10
+;tmptr.mapgrid.label_position = 0; x1, y1, x2, y2
+;cb = colorbar(target=tmptr,ORIENTATION=1,TAPER=1,/BORDER, font_size=12, TITLE='ETa anomaly %', POSITION=[.96,.35,0.99,.75])
+mc = MAPCONTINENTS(shapefile, /COUNTRIES,COLOR=[0,0,0],FILL_BACKGROUND=0,LIMIT=mlim, thick=2)
+tmptr.save,'/home/almcnall/NOAHpon_NOV_2016_0115.png'
+;endfor
+TOC
+
+;position = x1,y1, x2, y2
+cb = colorbar(target=tmptr,ORIENTATION=1,TAPER=1,/BORDER, TITLE='ETa anomaly %', position=[0.3,0.14,0.7,0.17])
+tmptr.save,'/home/almcnall/NOV_SSEB_ET.png'
 
 
 

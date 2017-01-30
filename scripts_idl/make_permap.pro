@@ -2,7 +2,8 @@
 ; using the basics from aqueductv4 script for reading in files.
 ; 03/31/16 Organized into ens directories.
 ; 04/05/16 separate out the percentile threshold map
-; 11/02/16 what was going on here?
+; 11/02/16 what was i doing?
+; 01/27/17 make percentiles rather than averages?
 
 .compile /home/almcnall/Scripts/scripts_idl/get_nc.pro
 .compile /home/almcnall/Scripts/scripts_idl/cgpercentiles.pro
@@ -32,7 +33,7 @@ emap_lry = params[5]
 NX = eNX
 NY = eNY
 
-;;readin CHIRPS soil moisture with readin_chirps_noah_sm.pro only to 2015! 
+;;readin CHIRPS soil moisture with readin_chirps_noah_sm.pro 1982-2015
 help, sm01, sm02, sm03, sm04, smp, smtot
 
 ;readin CHIRPS runoff with readin_chirps_noah_qs.pro
@@ -67,10 +68,15 @@ endfor  &$;x
 endfor  &$
 endfor
 
-;ofile = '/home/almcnall/SM01_permap_294_348_12_3.bin'
-;openw, 1, ofile
-;writeu, 1, permap
-;close,1
+;what do these maps look like (without crashing?)
+p1 = image(permap[*,*,0,2], /buffer, max_value=0.25, rgb_table=20, title = 'jan .033' )
+c=colorbar()
+p1.save, '/home/almcnall/test67.png'
+;once i decide on a percentile-climatology i can write it out and just use that..
+ofile = '/home/almcnall/SM01_permap_294_348_12_3.bin'
+openw, 1, ofile
+writeu, 1, permap
+close,1
 ;
 ;permap = fltarr(nx, ny, 12, 3)
 ;ifile3 = file_search('/home/almcnall/permap_294_348_12_3.bin')

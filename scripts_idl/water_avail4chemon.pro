@@ -179,7 +179,7 @@ index = [0,25,50,70,90,110,130,150,175];
 ;index = percentiles
 
 ncolors = n_elements(index) ;is this right or do i add some?
-mo = 9
+mo = 10
 y=34
 ;tmpgr = CONTOUR(avgsmm3, $
 tmpgr = contour(CM_anom24cube[*,*,mo,y]*mask, rgb_table=70, $
@@ -213,7 +213,7 @@ ingrid = read_tiff(ifile, GEOTIFF=g_tags)
 outdir = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/WaterAvail_SA/'
 ;;for yr = 1982,2016 do begin &$
 yr = 2016
-for m = 7,10 do begin &$
+for m = 9,11 do begin &$
   ofile = outdir+STRING(FORMAT='(''WaterStressPercentNorm_01mon_EA'',I4.4,I2.2,''.tif'')',yr,m) &$
   print,max(cm_anom24cube[*,*,m-1,yr-startyr],/nan) &$
   write_tiff, ofile, reverse(cm_anom24cube[*,*,m-1,yr-startyr],2), geotiff=g_tags, /FLOAT &$

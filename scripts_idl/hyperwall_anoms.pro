@@ -83,21 +83,29 @@ yname = string(indgen(nyrs)+1982)
 ;some value adjustment to get the mask to work.
 ;some problems on low end, nicer colorbar pls. Usually do this with contour but..
 for y = 33,34 do begin &$
-  w = WINDOW(DIMENSIONS=[700,819], /buffer) &$;works for EA 4104x2304
+ for y = 33,33 do begin &$
+ ; w = WINDOW(DIMENSIONS=[700,819], /buffer) &$;works for EA 4104x2304
+
  ; w = WINDOW(DIMENSIONS=[1000,2304],/buffer) &$;works for EA 4104x2304
 
-  m1 = MAP('Geographic',LIMIT=mlim,/CURRENT,horizon_thick=1) &$
+  ;m1 = MAP('Geographic',LIMIT=mlim,/CURRENT,horizon_thick=1) &$
 
   yr = y+1982 &$
   for mo = 0,11 do begin &$
+  w = WINDOW(DIMENSIONS=[700,819]) &$;works for EA 4104x2304
+  m1 = MAP('Geographic',LIMIT=mlim,/CURRENT,horizon_thick=1) &$
+
     mon = STRING(format='(I2.2)', mo+1) &$
   ;ncolors=21 &$
-  ingrid = smanom[*,*,mo,y] &$
+  ingrid = smm3[*,*,mo,y] &$
+  ;ingrid = smanom[*,*,mo,y] &$
 ;  ingrid(where(ingrid ge 20))= 20 &$
 ;  ingrid(where(ingrid le -20))=-20 &$
  ; bin = floor((255./(ncolors-1)))
   tmpgr = image(ingrid,rgb_table=74,image_dimensions=[nx/10,ny/10], image_location=[map_ulx,map_lry], $
-    min_value=-21, max_value=21, MAP_PROJECTION='Geographic', XSTYLE=1, YSTYLE=1, /OVERPLOT) &$
+     MAP_PROJECTION='Geographic', XSTYLE=1, YSTYLE=1, /OVERPLOT) &$
+    ; tmpgr.max_value = 50 ;for anomalies min_value=-21, max_value=21,
+    ; tmpgr.min_value = -1
     ;rgbind = FIX(FINDGEN(ncolors)*255./(ncolors-1))  &$  ; set the index of the colors to be pulled
     rgbdump = tmpgr.rgb_table &$
     ;rgbdump = CONGRID(rgbdump[*,rgbind],3,256)  &$ ; just rewrites the discrete colorbar
@@ -110,8 +118,12 @@ for y = 33,34 do begin &$
   ;position = x1,y1, x2, y2
   mc = MAPCONTINENTS(shapefile, /COUNTRIES,COLOR=[82,82,82],FILL_BACKGROUND=0,LIMIT=mlim, thick=1) &$
   tmpgr.title = 'Water Storage Anomaly '+strcompress(mname[mo]+'  '+yname[y]) &$
-  ofile = strcompress('/home/almcnall/HW_'+string(yr)+string(mon)+'v2.png', /remove_all) &$
-  tmpgr.save, ofile, RESOLUTION=270 &$
+  tmpgr.title = 'Water Storage '+strcompress(mname[mo]+'  '+yname[y]) &$
+
+ ; ofile = strcompress('/home/almcnall/HW_'+string(yr)+string(mon)+'v2.png', /remove_all) &$
+ ; ofile = strcompress('/home/almcnall/SMTOT_'+string(yr)+string(mon)+'.png', /remove_all) &$
+
+  ;tmpgr.save, ofile, RESOLUTION=270 &$
   endfor &$
 endfor
 
@@ -120,6 +132,8 @@ endfor
   ;;tmptr.save,'/home/almcnall/WaterAvail24mo_Apr.png'
   close
  
+ ;;write out absolute values...also divide by population?? Do i have continental population? 
+ 
  tifftemp = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/HYPERWALL/AF.tif' 
   temp = read_tiff(tifftemp,R,G,B,geotiff=g_tags)
   ;;write out for Jossy
@@ -127,8 +141,12 @@ for y=33,34 do begin &$
   yr = y+1982 &$
   for mo =0, 11 do begin &$
     mon = STRING(format='(I2.2)', mo+1) &$
-    ofile = strcompress('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/HYPERWALL/AF_SOILSTORE_ANOM_751x801_'+string(yr)+string(mon)+'.tif', /remove_all) &$
-    ogrid = reverse(SManom[*,*,mo,y]*mask,2) &$
+    ;ofile = strcompress('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/HYPERWALL/AF_SOILSTORE_ANOM_751x801_'+string(yr)+string(mon)+'.tif', /remove_all) &$
+    ofile = strcompress('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/HYPERWALL/AF_SOILSTORE_751x801_'+string(yr)+string(mon)+'.tif', /remove_all) &$
+
+    ;ogrid = reverse(SManom[*,*,mo,y]*mask,2) &$
+    ogrid = reverse(SMM3[*,*,mo,y],2) &$
+
     write_tiff, ofile,ogrid ,/FLOAT,geotiff=g_tags &$
     ;ofile = strcompress('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/HYPERWALL/AF_SOILSTORE_ANOM_751x801_'+string(yr)+string(mon)+'.bin', /remove_all) &$
     print, ofile &$

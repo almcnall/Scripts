@@ -2,8 +2,14 @@ pro PON_MED4SSEB
 
 ;this script computes the median (2003-2014)? and PON to make comparisons with the SSEBop
 ;;;;;read in NOAH ET from readin_chirps_noah_et.pro (for EA, SA, WA), only read in 2003-2016!
+;;then where do i plot them?
 
 help,  evapE, evapS, evapw
+
+params = get_domain01('EA')
+
+eNX = params[0]
+eNY = params[1]
 
 ;take the median for 2003-2013 (10yrs) for each month
 ;for monthly (not seasonal) analysis

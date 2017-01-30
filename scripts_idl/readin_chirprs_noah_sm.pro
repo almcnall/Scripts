@@ -93,5 +93,5 @@ delvar, Qs
 
 ;convert to m3 per 10km2 pixel (how does this differ with VIC?)
 SMm3 = SM01*10+SM02*30+SM03*60+SM04*100
-delvar, SM01, SM02, SM03, SM04, SMP
+delvar,  SM02, SM03, SM04, SMP
 SMtot_annual = mean(SMtot, dimension=3, /nan)
