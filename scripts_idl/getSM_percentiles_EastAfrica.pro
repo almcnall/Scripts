@@ -12,6 +12,7 @@ getSM_percentiles_EastAfrica
 ;06/03/15 update soil mositure percentiles for East Africa thru Feb 2015...why is the code set for MAM, OND?
 ;08/12/15 testing the percentiles computed in LVT move into its own script LVT_SMpercentiles
 ;03/31/15 hope this script still works...
+;03/06/17 this looks old, there might be something better...
 
 ;Kenya HESS window
 ;hmap_ulx = 24. & hmap_lrx = 51.
@@ -25,19 +26,22 @@ getSM_percentiles_EastAfrica
 ;hNY = huly -hlry + 2
 ;********get the historical OND end-of-seasons so we can calculate percentiles/anomalies*****
 ;East Africa WRSI/Noah window
-map_ulx = 22.  & map_lrx = 51.35
-map_uly = 22.95  & map_lry = -11.75
+;map_ulx = 22.  & map_lrx = 51.35
+;map_uly = 22.95  & map_lry = -11.75
+;
+;ulx = (180.+map_ulx)*10.  & lrx = (180.+map_lrx)*10.-1
+;uly = (50.-map_uly)*10.   & lry = (50.-map_lry)*10.-1
+;NX = lrx - ulx + 1.5
+;NY = lry - uly + 2
+;
+;;.compile /home/source/husak/idl_functions/make_wrsi_cmap.pro
+;;;;;;;;;;;;;;;;;;;;;;;;
+;;data_dir = '/home/sandbox/people/mcnally/NOAH_CHIRPSv2.0_MERRA_EA/SM01_YRMO/'
+;data_dir = '/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_EA/SURFACEMODEL/'
+;;maybe compute the average from both the day data and the monthly to check?
 
-ulx = (180.+map_ulx)*10.  & lrx = (180.+map_lrx)*10.-1
-uly = (50.-map_uly)*10.   & lry = (50.-map_lry)*10.-1
-NX = lrx - ulx + 1.5
-NY = lry - uly + 2
-
-;.compile /home/source/husak/idl_functions/make_wrsi_cmap.pro
-;;;;;;;;;;;;;;;;;;;;;;;
-;data_dir = '/home/sandbox/people/mcnally/NOAH_CHIRPSv2.0_MERRA_EA/SM01_YRMO/'
-data_dir = '/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_EA/SURFACEMODEL/'
-;maybe compute the average from both the day data and the monthly to check?
+;read in data from readin_FLDAS_noah_sm.pro
+help, SMP, SM01, SM02
 
 startyr = 1982
 endyr = 2015
@@ -47,31 +51,38 @@ nyrs = endyr-startyr+1
 startmo = 1
 endmo = 12
 nmos = endmo - startmo+1
-SM = FLTARR(NX,NY,nmos,nyrs)
-;this loop reads in the selected months only
-for yr=startyr,endyr do begin &$
-  for i=0,nmos-1 do begin &$
-  y = yr &$
-  m = startmo + i &$
-  if m gt 12 then begin &$
-  m = m-12 &$
-  y = y+1 &$
-endif &$
-fileID = ncdf_open(data_dir+STRING(FORMAT='(''SM01_Noah_'',I4.4,''_'',I2.2,''.nc'')',y,m), /nowrite) &$
-SoilID = ncdf_varid(fileID,'SoilMoist_tavg') &$
-ncdf_varget,fileID, SoilID, SM01 &$
-SM[*,*,i,yr-startyr] = SM01 &$
 
-endfor &$
-endfor
-sm(where(sm lt 0))   = !values.f_nan ;CHIRPS MERRA
-;set march to december 2015 as nans
-sm[*,*,2:11,34] = !values.f_nan
+;SM = FLTARR(NX,NY,nmos,nyrs)
+;;this loop reads in the selected months only
+;for yr=startyr,endyr do begin &$
+;  for i=0,nmos-1 do begin &$
+;  y = yr &$
+;  m = startmo + i &$
+;  if m gt 12 then begin &$
+;  m = m-12 &$
+;  y = y+1 &$
+;endif &$
+;fileID = ncdf_open(data_dir+STRING(FORMAT='(''SM01_Noah_'',I4.4,''_'',I2.2,''.nc'')',y,m), /nowrite) &$
+;SoilID = ncdf_varid(fileID,'SoilMoist_tavg') &$
+;ncdf_varget,fileID, SoilID, SM01 &$
+;SM[*,*,i,yr-startyr] = SM01 &$
+;
+;endfor &$
+;endfor
+;sm(where(sm lt 0))   = !values.f_nan ;CHIRPS MERRA
+;;set march to december 2015 as nans
+;sm[*,*,2:11,34] = !values.f_nan
 
 ;this is percentiles Mar2Sep or OND (why?)
 ;smMar2Sep = mean(sm[*,*,9:11,*],dimension=3,/nan)
 ;npermap = fltarr(nx,ny,4)
-npermap = fltarr(nx,ny,12,4)
+
+breaks = [0.1, 0.3, 0.5, 0.7, 0.9]
+sm = SM01[*,*,*,0:34]
+
+npermap = fltarr(nx,ny,12,n_elements(breaks))
+
+; find the thresholds for each pixel.
 for m = 0, 11 do begin &$
  for x = 0, nx-1 do begin &$
   for y = 0, ny-1 do begin &$
@@ -86,14 +97,14 @@ for m = 0, 11 do begin &$
 
     ;then find the index of the Xth percentile, how would i fit a distribution?
     ;so here i just asked for the threshold values that represent these percentiles.
-    Npermap[x,y,m,*] = cgPercentiles(Npix, PERCENTILES=[0.05,0.1,0.2,0.3]) &$
+    Npermap[x,y,m,*] = cgPercentiles(Npix, PERCENTILES=breaks) &$
   ;  Npermap[x,y,*] = cgPercentiles(Npix, PERCENTILES=[0.05,0.1,0.2,0.3]) &$
 
   endfor  &$;x
  endfor  &$ 
 endfor
 
-;for each month in the time series classify these using the USDM scheme
+;for each month in the time series classify these using the USDM scheme 
 ;from US drought monitor (0-2 = exceptional; 3-5 = extreme [5]); 6-10=severe [4]; 11-20=moderate [3]; 21-30 = abnormal dry [2]; >30 not drought [1]
 
 ;npc = smMar2Sep*!values.f_nan

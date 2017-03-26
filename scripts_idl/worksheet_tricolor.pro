@@ -13,17 +13,9 @@
 ;   mid_count(where(cur_gt eq 60)) = !VALUES.F_NAN
 ;   hi_count(where(cur_gt eq 60)) = !VALUES.F_NAN
 
-;   close,1
-;   openw,1,STRING(FORMAT='("PON_counts.",I2.2,I1.1)',month[t],dekad[t])
-;   writeu,1,[[[lo_count]],[[mid_count]],[[hi_count]]]
-;   close,1
-
-;endfor
-;;map stuff
-
+;should have domain parameters from readin_FLDAS_noah_sm.pro
+; not if i am starting from 'count_map'
 params = get_domain01('EA')
-;params = get_domain01('AF')
-
 
 NX = params[0]
 NY = params[1]
@@ -31,9 +23,10 @@ map_ulx = params[2]
 map_lrx = params[3]
 map_uly = params[4]
 map_lry = params[5]
-nsims = 1054
 
-;;east africa bare soil/water mask;;
+;this number varies based
+;e.g. CHIRPS January = 1054 = 31days*34yrs
+nsims = n_elements(ifile)  
 
 ;;;read in landcover MODE to grab sparse veg mask;;;
 .compile /home/almcnall/Scripts/scripts_idl/get_nc.pro
@@ -44,9 +37,9 @@ LC = get_nc(VOI, ifile)
 bare = where(LC[*,*,15] eq 1, complement=other)
 water = where(LC[*,*,16] eq 1, complement=other)
 
-mask = fltarr(NX,NY)+1
-mask(bare) = !values.f_nan
-mask(water) = !values.f_nan
+mask = bytarr(NX,NY)+1
+mask(bare) = 0
+mask(water) = 0
 
 mask3 = rebin(mask,nx,ny,3)
 
@@ -68,20 +61,14 @@ mask3 = rebin(mask,nx,ny,3)
  ;  map_lry = 40.05 - (lry * 0.1)
 
    ; now read in the data and map it
-   ifile = '/home/almcnall/IDLplots/countmap_294_348_3_SM01.bin'
-   ifile = '/home/almcnall/Nov2015_countmap_294_348_3.bin'
-   ifile = '/home/almcnall/Dec2015_countmap_294_348_3.bin'
-   ifile = '/home/almcnall/Jan2015_countmap_294_348_3.bin'
-
-
-   openr,1,ifile
-   readu,1,ct_cube
-   close,1
+   help, countmap
+;   ifile = '/home/almcnall/IDLplots/countmap_294_348_3_SM01.bin'
+;   openr,1,ifile
+;   readu,1,ct_cube
+;   close,1
+   
    ct_cube = countmap
-   ;does this have to be a bytarr?
    t_class = BYTARR(NX,NY)
-   ;t_class = FLTARR(NX,NY)
-
    
    ; set the triangle for each class
    t_class(where(ct_cube[*,*,1] ge most_cut)) = 1
@@ -103,11 +90,12 @@ mask3 = rebin(mask,nx,ny,3)
                  ct_cube[*,*,0] lt least_cut AND ct_cube[*,*,1] lt least_cut)) = 8
    t_class(where(ct_cube[*,*,2] ge most_cut)) = 9
 
+;;can this be plotted with the EA_plots script?
    wmap = IMAGE(CONGRID(t_class,2*NX,2*NY), $
              IMAGE_DIMENSIONS=[FLOAT(NX)/10.0,FLOAT(NY)/10.0], IMAGE_LOCATION=[map_ulx,map_lry], $
              DIMENSIONS=[2.5*NX,2.5*NY],AXIS_STYLE=2,GRID_UNITS=2, $
-             RGB_TABLE=[[255,255,255],[t_colors]],/BUFFER, $
-             FONT_SIZE=2)
+             RGB_TABLE=[[255,255,255],[t_colors]], $
+             FONT_SIZE=2, /buffer)
    map = MAP('Geographic', $
      LIMIT = [map_lry, map_ulx, map_uly, map_lrx], $
      ;LIMIT = [-35.0, map_ulx, map_uly, map_lrx], $
@@ -123,5 +111,8 @@ mask3 = rebin(mask,nx,ny,3)
      COLOR = [0, 0, 0], THICK=2, $
      FILL_BACKGROUND = 0)
 
-   wmap.save, '/home/almcnall/IDLplots/test.png'
+   wmap.save, '/home/almcnall/IDLplots/test_ESP.png'
 endfor
+
+wmap.title = 'prob of wet/avg/dry June1, intialized Mar15'
+

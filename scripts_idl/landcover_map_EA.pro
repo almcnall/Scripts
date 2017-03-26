@@ -2,6 +2,7 @@ pro landcover_map_EA
 ;8-17-14 make simple landcover map for SMAP-WRSI paper
 ;12-8-14 can i use this for AVHRR and MODIS comparison over east africa?
 ;08-20-15 i don't love this but someone always wants to know the dominant landcover type...
+;03-13-17 revisit for better plotting, since someone always wants to know...
 ;; 
 ;from UMD website
 ;0 Water
@@ -18,6 +19,23 @@ pro landcover_map_EA
 ;11  Cropland
 ;12  Bare Ground
 ;13  Urban and Built
+.compile /home/almcnall/Scripts/scripts_idl/get_nc.pro
+.compile /home/almcnall/Scripts/scripts_idl/get_domain01.pro
+
+params = get_domain01('EA')
+
+NX = params[0]
+NY = params[1]
+map_ulx = params[2]
+map_lrx = params[3]
+map_uly = params[4]
+map_lry = params[5]
+
+;;;read in landcover MODE to grab sparse veg mask;;;
+indir = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/Param_Noah3.3/'
+ifile = file_search(indir+'lis_input.MODISmode_ea.nc')
+VOI = 'LANDCOVER'
+LC = get_nc(VOI, ifile)
 
 ;IGBP-MODIS: was there some not how they changed the order of 'ocean?', whatif i move ocean to the end?
 CLASS_FULL = ['EVERGREEN NEEDLELEAF FOREST',   'EVERGREEN BROADLEAF FOREST' , 'DECIDUOUS NEEDLELEAF FOREST'  , $
@@ -40,15 +58,8 @@ CLASS_FULL = ['EVERGREEN NEEDLELEAF FOREST',   'EVERGREEN BROADLEAF FOREST' , 'D
 ;lis_input_sa_elev.nc
 ;lis_input_wa_elev.nc
 ; read in the IGBP-MODIS landcover data
-ifile = file_search('/home/sandbox/people/mcnally/LIS_NETCDF_INPUT/lis_input.reorg2_010_noah_hymap_tigris.nc')
+;ifile = file_search('/home/sandbox/people/mcnally/LIS_NETCDF_INPUT/lis_input.reorg2_010_noah_hymap_tigris.nc')
 
-fileID = ncdf_open(ifile, /nowrite)
-landID = ncdf_varid(fileID,'LANDCOVER') &$
-ncdf_varget,fileID, landID, MODIS
-dims = size(MODIS, /dimensions) & print, dims
-
-NX = dims[0]
-NY = dims[1]
 ;what is the greatest value?
 ;I need the max value AND its index...
 vmap = modis*!values.f_nan
@@ -58,18 +69,7 @@ for x= 0, nx-1 do begin &$
  endfor &$
 endfor
 
-;Southern Africa (37.85 S - 6.35 N; 6.05 E - 54.55 E)
-;NX = 486, NY = 443
-;map_ulx = 6.05  & map_lrx = 54.55
-;map_uly = 6.35  & map_lry = -37.85
 
-;;East Africa WRSI/Noah window
-;map_ulx = 22.  & map_lrx = 51.35
-;map_uly = 22.95  & map_lry = -11.75
-;
-;; west africa domain
-;map_ulx = -18.65 & map_lrx = 25.85
-;map_uly = 17.65 & map_lry = 5.35
 
 ;Tigris-Euphrates domainFLDAScd 
 map_ulx = 34.05 & map_lrx = 53.95

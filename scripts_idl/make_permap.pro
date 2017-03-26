@@ -4,85 +4,73 @@
 ; 04/05/16 separate out the percentile threshold map
 ; 11/02/16 what was i doing?
 ; 01/27/17 make percentiles rather than averages?
+; 02/16/17 make the percentile map from monthly...daily too complicated.
 
 .compile /home/almcnall/Scripts/scripts_idl/get_nc.pro
 .compile /home/almcnall/Scripts/scripts_idl/cgpercentiles.pro
 
 ;.compile /home/source/mcnally/scripts_idl/get_nc.pro
 
-startyr = 1982 ;start with 1982 since no data in 1981
-endyr = 2015
-nyrs = endyr-startyr+1
+;;;date info should come with the readin_FLDAS_noah_sm.pro;;;;;;;
+;startyr = 1982 ;start with 1982 since no data in 1981
+;endyr = 2015
+;nyrs = endyr-startyr+1
+;startmo = 1
+;endmo = 12
+;nmos = endmo - startmo+1
+;ens = 100
 
-;read in all months and then just select the ones I want. Doesn't deal with subsets well. Although a lot of that data doesn't exsit.
-startmo = 1
-endmo = 12
-nmos = endmo - startmo+1
-ens = 100
+;; domain info should come from readin_FLDAS_noah_sm.pro
+;;params = [NX, NY, map_ulx, map_lrx, map_uly, map_lry]
+;params = get_domain01('EA')
+;eNX = params[0]
+;eNY = params[1]
+;emap_ulx = params[2]
+;emap_lrx = params[3]
+;emap_uly = params[4]
+;emap_lry = params[5]
+;
+;NX = eNX
+;NY = eNY
 
-;; params = [NX, NY, map_ulx, map_lrx, map_uly, map_lry]
-params = get_domain01('EA')
-
-eNX = params[0]
-eNY = params[1]
-emap_ulx = params[2]
-emap_lrx = params[3]
-emap_uly = params[4]
-emap_lry = params[5]
-
-NX = eNX
-NY = eNY
-
-;;readin CHIRPS soil moisture with readin_chirps_noah_sm.pro 1982-2015
-help, sm01, sm02, sm03, sm04, smp, smtot
-
-;readin CHIRPS runoff with readin_chirps_noah_qs.pro
-help, RO
-;these are the averages, but I want percentiles (oh, now you want runoff?)
-climRO = mean(RO,dimension=4,/nan)
-climSM01 = mean(SM01,dimension=4,/nan)
-climSM02 = mean(SM02,dimension=4,/nan)
-
-help, climRO, climSM01, climSM02
-
+;;readin CHIRPS/RFE2 soil moisture with readin_FLDAS_noah_sm.pro
+help, sm01, smday
 ;ok, now define the thresholds with the percenitle function
+;now i want to look at all days x all yrs (31*31) to generate the percentiles...
+;I think i should do this one month at at time...and save it so i don't have to do it again!
 VAR = SM01;CMPPcube
 permap = fltarr(nx,ny,12,3)
 for m = 0, 11 do begin &$
+; m = 0 &$
   for x = 0, nx-1 do begin &$
+    print, x &$
     for y = 0, ny-1 do begin &$
-  ;skip nans
-  ;test = where(finite(smMar2Sep[x,y,*]),count) &$
-  test = where(finite(VAR[x,y,*,*]),count) &$
-
-  if count eq -1 then continue &$
-  ;look at one pixel time series at a time
-  ;Npix = smMar2Sep[x,y,*] &$
-  Npix = VAR[x,y,m,*] &$
-
-  ;what thresholds did Greg (85<X<115% of normal) and Nick use?
-  ;get threshold values that represent these percentiles.
-  permap[x,y,m,*] = cgPercentiles(Npix, PERCENTILES=[0.33, 0.5, 0.67]) &$
-
-endfor  &$;x
-endfor  &$
+      ;reshape to an nx, ny, m, nday*nyr
+      ;this is one month and 31*nyrs days...did it reform properly?
+      ;var = reform(smday[*, *, *, 0, *], nx, ny, 1, nyrs*31) &$
+      ;skip nans 
+      test = where(finite(VAR[x,y,*,*]),count) &$
+      if count eq -1 then continue &$
+      ;look at one pixel time series at a time. nans seem ok.
+      Npix = VAR[x,y,m,*] &$
+      ;get threshold values that represent these percentiles.
+      permap[x,y,m,*] = cgPercentiles(Npix, PERCENTILES=[0.33,0.50, 0.67]) &$
+    endfor  &$;x
+  endfor &$ 
 endfor
 
 ;what do these maps look like (without crashing?)
 p1 = image(permap[*,*,0,2], /buffer, max_value=0.25, rgb_table=20, title = 'jan .033' )
 c=colorbar()
 p1.save, '/home/almcnall/test67.png'
-;once i decide on a percentile-climatology i can write it out and just use that..
-ofile = '/home/almcnall/SM01_permap_294_348_12_3.bin'
-openw, 1, ofile
-writeu, 1, permap
-close,1
-;
-;permap = fltarr(nx, ny, 12, 3)
-;ifile3 = file_search('/home/almcnall/permap_294_348_12_3.bin')
-;openr, 1, ifile3
-;readu, 1, permap
-;close,1
 
-delvar, sm, sm01, sm02, qsub, qsuf, var, npix
+;;;;write out the file to skip this step;;;
+;ofile = '/home/almcnall/IDLplots/SM01_NOAH_RFE2_permap_294_348_12_3.bin'
+ofile = '/discover/nobackup/projects/fame/MODEL_RUNS/EA_Noah33/ESPvanilla/SM01_NOAH_permap_294_348_12_3_1982_2016.bin'
+
+openw, 1, ofile
+writeu,1, permap
+close, 1
+
+delvar, VAR, Npix
 

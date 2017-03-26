@@ -54,7 +54,7 @@ ea_top = (map_uly-smap_lry)/0.0083 & print, ea_top
 temp = image(ingrid[ea_left:ea_right,ea_bot:ea_top])
 
 startyr = 2003
-endyr = 2016
+endyr = 2017
 NMOS = 12
 temp = ingrid[ea_left:ea_right,ea_bot:ea_top]
 dim = size(temp,/dimensions) & print, dim

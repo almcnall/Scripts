@@ -1,14 +1,16 @@
 ;this script is to calculate the aquestat indices
-; 1/10/16 using this as a start to the SSEB compare (again)
-; 3/18/16 revisit for MERRA2 comparisons
-; 5/9/16 revist for masking and Equitable Threat Scores
-; 5/13/16 switched to correlations, get code cleaned up for different regions for paper.
+; 01/10/16 using this as a start to the SSEB compare (again)
+; 03/18/16 revisit for MERRA2 comparisons
+; 05/9/16 revist for masking and Equitable Threat Scores
+; 05/13/16 switched to correlations, get code cleaned up for different regions for paper.
 ; the percent of detection might yield better fews-like results 
-; 5/22/16 plot going into the FLDAS paper.
-; 6/06/16 pull out the read-in like i did for the runoff 
+; 05/22/16 plot going into the FLDAS paper.
+; 06/06/16 pull out the read-in like i did for the runoff 
 ; 10/21/16 revist for revisions
 ; 10/23/16 add in lines for VIC
 ; 10/26/16 separate out the MED and PON calculations for 3 domains
+; 02/10/17 set up workflow...(0) generate median files for FLDAS (1) clip ETA files to domain [LVT option] 
+; (2) do the PON calculation for FLDAS (3) plot ETA and FLDAS side by side
 
 .compile /home/almcnall/Scripts/scripts_idl/get_nc.pro
 .compile /home/almcnall/Scripts/scripts_idl/get_domain01.pro
@@ -89,27 +91,30 @@ Wmask(bare)=!values.f_nan
 Wmask(water)=!values.f_nan
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;See clipssebtoeros.pro for SSEB subsetting routine...this doesn't look like real-time updates!
-indir = '/discover/nobackup/projects/fame/Validation/SSEB/ETA_AFRICA/'
+;;SUBSET the region of interest an most up-to-date files 
+;from the Africa_ETA_file with clipssebtoeros.pro
 
-ETAe = bytarr(eNX,eNY,12,(endyr-startyr)+1)
-ETAs = bytarr(sNX,sNY,12,(endyr-startyr)+1)
-ETAw = bytarr(wNX,wNY,12,(endyr-startyr)+1)
+;indir = '/discover/nobackup/projects/fame/Validation/SSEB/ETA_AFRICA/'
 
-openr,1,indir+'ETA_EA_294_348_12_14_byte.bin'
-readu,1,ETAe
-close,1
-
-openr,1,indir+'ETA_SA_486_443_12_14_byte.bin'
-readu,1,ETAs
-close,1
-
-openr,1,indir+'ETA_WA_446_124_12_14_byte.bin'
-readu,1,ETAw
-close,1
+;ETAe = bytarr(eNX,eNY,12,(endyr-startyr)+1)
+;ETAs = bytarr(sNX,sNY,12,(endyr-startyr)+1)
+;ETAw = bytarr(wNX,wNY,12,(endyr-startyr)+1)
+;
+;openr,1,indir+'ETA_EA_294_348_12_14_byte.bin'
+;readu,1,ETAe
+;close,1
+;
+;openr,1,indir+'ETA_SA_486_443_12_14_byte.bin'
+;readu,1,ETAs
+;close,1
+;
+;openr,1,indir+'ETA_WA_446_124_12_14_byte.bin'
+;readu,1,ETAw
+;close,1
 
 ;;;;;;;;;;get PON values from PON_MED4SSEB.pro;;;;;;;;;;;;;;
 help, PONe, PONs, PONw
+help, eta
 
 ;monthly correlations
 ;these are kinda slow, only calc when needed
@@ -128,7 +133,7 @@ help, PONe, PONs, PONw
 
 ;make vectors for correlations
 noahTSe = reform(pone,eNX,eNY, 12*14)
-ssebTSe = reform(etae,eNX,ENY, 12*14)
+ssebTSe = reform(eta[*,*,*,0:13],eNX,ENY, 12*14)
 
 noahTSs = reform(pons,sNX,sNY, 12*14)
 ssebTSs = reform(etas,sNX,sNY, 12*14)
@@ -210,13 +215,13 @@ phisto = BARPLOT(xbin, pdf,/current, layout=[1,3,2], title='Benin-Noah')
 
 ;;;STICK with CONTOUR;;;;;;;
 cormap2 = cormap2s
-map_ulx = smap_ulx & min_lon = map_ulx
-map_lry = smap_lry & min_lat = map_lry
-map_uly = smap_uly & max_lat = map_uly
-map_lrx = smap_lrx & max_lon = map_lrx
-mask = smask
-NX = sNX
-NY = sNY
+map_ulx = emap_ulx & min_lon = map_ulx
+map_lry = emap_lry & min_lat = map_lry
+map_uly = emap_uly & max_lat = map_uly
+map_lrx = emap_lrx & max_lon = map_lrx
+mask = emask
+NX = eNX
+NY = eNY
 
 shapefile = '/discover/nobackup/almcnall/GAUL_2013_2012_0.shapefiles/G2013_2012_0.shp'
 ;w = WINDOW(DIMENSIONS=[700,900]);works for EA 700x900
@@ -314,11 +319,11 @@ ysize=0.10
 index = [0,50,70,90,110,130,150];
 ncolors = n_elements(index)
 CT=COLORTABLE(73) ;keep this so i can change values.
-y=n_elements(ETAe[0,0,0,*])-1
-m=10 ;zero index 1=feb
+y=n_elements(ETA[0,0,0,*])-2
+m=11 ;zero index 1=feb
 ;for y = 0,13 do begin &$
-;tmptr = CONTOUR(ETAe[*,*,m,y]*mask,$
-tmptr = CONTOUR(PONe[*,*,m,y]*mask,$
+tmptr = CONTOUR(ETA[*,*,m,y]*mask,$
+;tmptr = CONTOUR(PONe[*,*,m,y]*mask,$
   FINDGEN(NX)*(xsize)+ min_lon, FINDGEN(NY)*(ysize)+min_lat, BACKGROUND_COLOR='WHITE', $
   RGB_TABLE=CT, /FILL, ASPECT_RATIO=1, Xstyle=1,Ystyle=1, /overplot, $
   C_VALUE=index, RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors)) &$
@@ -329,15 +334,15 @@ tmptr = CONTOUR(PONe[*,*,m,y]*mask,$
 ;  tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
 ;  tmptr.mapgrid.FONT_SIZE = 10
 ;tmptr.mapgrid.label_position = 0; x1, y1, x2, y2
-;cb = colorbar(target=tmptr,ORIENTATION=1,TAPER=1,/BORDER, font_size=12, TITLE='ETa anomaly %', POSITION=[.96,.35,0.99,.75])
+cb = colorbar(target=tmptr,ORIENTATION=1,TAPER=1,/BORDER, font_size=12, TITLE='ETa anomaly %', POSITION=[.96,.35,0.99,.75])
 mc = MAPCONTINENTS(shapefile, /COUNTRIES,COLOR=[0,0,0],FILL_BACKGROUND=0,LIMIT=mlim, thick=2)
-tmptr.save,'/home/almcnall/NOAHpon_NOV_2016_0115.png'
+tmptr.save,'/home/almcnall/IDLplots/NOAHpon_DEC_2016_0115.png'
 ;endfor
 TOC
 
 ;position = x1,y1, x2, y2
-cb = colorbar(target=tmptr,ORIENTATION=1,TAPER=1,/BORDER, TITLE='ETa anomaly %', position=[0.3,0.14,0.7,0.17])
-tmptr.save,'/home/almcnall/NOV_SSEB_ET.png'
+cb = colorbar(target=tmptr,ORIENTATION=0,TAPER=1,/BORDER, TITLE='ETa anomaly %', position=[0.3,0.14,0.7,0.17])
+tmptr.save,'/home/almcnall/DEC_SSEB_ET.png'
 
 
 

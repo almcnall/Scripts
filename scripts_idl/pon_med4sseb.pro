@@ -1,9 +1,12 @@
 pro PON_MED4SSEB
 
-;this script computes the median (2003-2014)? and PON to make comparisons with the SSEBop
-;;;;;read in NOAH ET from readin_chirps_noah_et.pro (for EA, SA, WA), only read in 2003-2016!
-;;then where do i plot them?
+;this script computes the median (2003-2014) and PON to make comparisons with the SSEBop
+;;read in NOAH ET from readin_chirps_noah_et.pro (for EA, SA, WA), only read in 2003-2016!
 
+;;2/10/17 save these outputs, since i do use the same median everytime...benefit was all three regions...
+
+evapE = Evap
+delvar, Evap
 help,  evapE, evapS, evapw
 
 params = get_domain01('EA')

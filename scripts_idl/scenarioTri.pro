@@ -81,7 +81,7 @@ openr,1,ifile
 readu,1,countmap
 close,1
 
-JanCM=countmap
+febCM=countmap
 
 help, octCM, novCM, decCM, janCM
 
@@ -107,13 +107,13 @@ CM=novCM
 
 ;;;;;;can i use plot east africa.pro for this?;;;;;;;;
 ;;purple triple plots - not sure i want to work on these...
-month = ['jan']
+month = ['feb']
 
   ;RGB_INDICES=[ 10, 20, 30, 35, 45, 55] ;what are the breaks for a particular count? greg's triangle computes this.
   ;351,351,351 = equal probable 
   rgb_indices = [351, 720, 1000]
   n_colors = n_elements(rgb_indices)
-  index = rgb_indices
+  index = rgb_indices's 
   ct=colortable(51)
 ;for i = 0,11 do begin &$
 i = 0 ; dry, wet, percentile
