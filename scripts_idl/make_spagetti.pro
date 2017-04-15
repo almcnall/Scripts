@@ -1,8 +1,8 @@
 pro make_spagetti
 
 ;;;forecast intialization date
-;startd = '20170315'
-startd = '20170228'
+startd = '20170330'
+;startd = '20170228'
 
 ;yrs used for the ESPing
 startyr = 1982
@@ -13,14 +13,14 @@ yr = indgen(nyrs)+1982 & print, yr
 
 
 NOAHdir = '/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/'
-indir2 = NOAHdir+'Noah33_CHIRPS_MERRA2_EA/ESPvanilla/Noah33_CM2_ESPV_EA/'+string(startd)+'/'
+indir2 = NOAHdir+'Noah33_CHIRPS_MERRA2_EA/ESPvanilla/Noah33_CM2_ESPV_EA/'+string(startd)+'_CHIRP/'
 ;indir2 = NOAHdir+'Noah33_RFE_GDAS_EA/ESPvanilla/Noah33_RG_ESPV_EA/'+string(startd)
 
 
 ;where did 208 come from? 11 because 12 months, starting in feb
 ;is there a reason to start this in jan?
 ;enter month of intitialzation 1 = 20170131, 3 = march, output for april though...
-initmo = 2
+initmo = 3
 nmos = 12
 espgrid = fltarr(NX, NY, nmos,nyrs)*!values.f_nan
 ;go into the outter directory...
@@ -56,28 +56,53 @@ myind = FLOOR( (0.793458 - map_lry) / 0.1)
 
 ;this wants SMO1 from readin_FLDAS_noah.pro
 help, sm01
-;inlude the ensemble mean (try median)
-ensmean = median(espgrid, dimension = 4) & help, ensmean
+;inlude the ensemble mean (try median), use percentiles rather than median
+;ensmean = median(espgrid, dimension = 4) & help, ensmean
 ;also include the historic mean
 histmean = median(sm01, dimension = 4) & help, histmean
 ;concatinate Dec31 as Jan1 to fix alighnment
 ;this doesn't work so great if i need to plot more than a point.
 histshift = [ [[histmean[*,*,11]]], [[histmean[*,*,0:10]]] ]
+
 sm01shift = [ [[sm01[mxind,myind,11,34]]], [[sm01[mxind,myind,0:10,35]]] ]
 
+;these shifts don't auto shift correctly!
 
-w = window(DIMENSIONS=[1000,900])
+;compute percentiles of the ensembles
+;not yet tested
+permap = fltarr(nx, ny, 12, 3)
+for m = 0,11 do begin &$
+  for x = 0, nx-1 do begin &$
+  for y = 0, ny-1 do begin &$
+  ;skip nans
+  test = where(finite(espgrid[x,y,m,*]),count) &$
+  if count eq -1 then continue &$
+  ;look at one pixel time series at a time
+  pix = espgrid[x,y,m,*] &$
+  ;then find the index of the Xth percentile, how would i fit a distribution?
+  permap[x,y,m,*] = cgPercentiles(pix , PERCENTILES=[0.33,0.5,0.67]) &$
+endfor  &$
+endfor
+
+w = window(DIMENSIONS=[1900,900])
 ;;plot the timeseries for this yr
 for n = 0, n_elements(espgrid[0,0,0,*])-1 do begin &$
   p1 = plot(espgrid[mxind, myind, *, n], /overplot, color='grey', name = 'ESP ENS') &$
   ;p1.save, '/home/almcnall/IDLplots/ts_mxing2.png' &$
 endfor
-p2 = plot(ensmean[mxind, myind, *], /overplot, color='blue', thick=2, name = 'ENS median') 
+p2 = plot(permap[mxind, myind, *, 0], /overplot, color='cyan', thick=2, name = 'ENS <33rd')
+p3 = plot(permap[mxind, myind, *, 1], /overplot, color='blue', thick=2, name = 'ENS median')
+p4 = plot(permap[mxind, myind, *, 2], /overplot, color='cyan', thick=2, name = 'ENS >67rd')
+
 ;hist mean off by 1 b/c end of month vs 1st of month issue. 
-p3 = plot(histshift[mxind, myind,0:11], /overplot, color='green', thick=2, name = 'historical median')
+p5 = plot(histshift[mxind, myind,0:11], /overplot, color='green', thick=2, name = 'historical median')
+
 ; so, jan/feb exsist here. March comes from CHIRP...so i have CHIRP from March-1 to March-15
 ; seems like i am still a month off...
-p4 = plot(sm01shift, /overplot, color = 'grey', thick = 2, linestyle=2, name = 'obs')
+p6 = plot(sm01shift, /overplot, color = 'grey', thick = 2, linestyle=2, name = 'obs')
+p7 = plot(espgrid[mxind, myind, *, 2004-1982], /overplot, color='orange', name = '2004', thick=3)
+p8 = plot(espgrid[mxind, myind, *, 2012-1982], /overplot, color='red', name = '2012', thick=3)
+
 ;add month tickmarks...how do I do this again?
 p1.xminor = 0
 p1.xrange = [0, 11]
@@ -86,9 +111,9 @@ p1.xtickvalues = indgen(12)
 xticks = ['jan', 'feb', 'mar', 'apr', 'may', 'jun','jul','aug','sep','oct','nov','dec']
 p1.xtickname = xticks
 p1.font_name='times'
-null = legend(target=[p1,p2,p3,p4], position=[0.8,0.35],font_size=14, font_name='times', color='w', shadow=0)
+null = legend(target=[p1,p2,p3,p4,p5,p6,p7,p8], position=[0.8,0.35],font_size=14, font_name='times', color='w', shadow=0)
 ;p1.save, '/home/almcnall/IDLplots/ts_mxing2.png' 
-p1.title = 'Init. Feb28, 2017 Mpala, Kenya' ;Haramka Somalia'
+p1.title = 'Init. March30, 2017 Mpala Kenya';Haramka Somalia'
 
 
 

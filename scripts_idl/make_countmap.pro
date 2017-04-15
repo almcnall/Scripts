@@ -40,7 +40,7 @@ help, permap
 ;mar_permap = permap[*,*,2,*]
 
 ;;;forecast intialization date 
-startd = '20170315' ;'20170228'
+startd = '20170330' ;'20170228'
 ;make sure i am looking at the right runs
 NOAHdir = '/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/'
 indir2 = NOAHdir+'Noah33_CHIRPS_MERRA2_EA/ESPvanilla/Noah33_CM2_ESPV_EA/'+string(startd)
@@ -51,12 +51,11 @@ indir2 = NOAHdir+'Noah33_CHIRPS_MERRA2_EA/ESPvanilla/Noah33_CM2_ESPV_EA/'+string
 ;percentile map bases at end of month, while ESP at first. e.g. MarchESP=FEBper
 
 ;ESPmonth march
-ESP_M = 6 ;january=1, feb=2, Mar1=3 April1=4, May1=5
+ESP_M = 6 ;jajnuary=1, feb=2, Mar1=3 April1=4, May1=5, June1=6
 PER_M = ESP_M-1
 M = PER_M-1
 ;PERmonth PerM = M-1
 
-;change this so it matches month of interest
 ifile = file_search(strcompress(indir2+'/????/SURFACEMODEL/????'+STRING(format='(I2.2)', ESP_M) +'/LIS_HIST*.nc', /remove_all))
 help, ifile
 ;;;;;read in the daily estimate;;;;
@@ -78,33 +77,86 @@ for i = 0, n_elements(ifile)-1 do begin &$
   print, i &$
 endfor
 
+;add the analogue yrs (2012, 2004) in a couple more times
+AN1 = '2004'
+ifile = file_search(strcompress(indir2+'/'+AN1+'/SURFACEMODEL/'+AN1+STRING(format='(I2.2)', ESP_M) +'/LIS_HIST*.nc', /remove_all))
+;add 2012 ...do 8  more times
+for j = 0,7 do begin &$  
+  VOI = 'SoilMoist_tavg' &$
+  ;read in all soil layers
+  SM = get_nc(VOI, ifile) &$
+  ;just keep the top layer
+  SMlayer = SM[*,*,0] &$
+  ;count n times that soil is less than 0.33 threshold
+  dry = SMlayer lt permap[*,*,M,0] &$
+  countmap[*,*,0] = countmap[*,*,0] + dry &$
+  ;count n times that soil is less than 0.67 threshold
+  avg = SMlayer lt permap[*,*,M,2] &$
+  countmap[*,*,1] = countmap[*,*,1] + avg &$
+  print, j &$
+endfor 
+  
 ;finalize the count map 3/2-2/3-1/3
-countmap[*,*,2] = n_elements(ifile) ;say that 100% of values are wet
+ifile = file_search(strcompress(indir2+'/????/SURFACEMODEL/????'+STRING(format='(I2.2)', ESP_M) +'/LIS_HIST*.nc', /remove_all))
+
+countmap[*,*,2] = n_elements(ifile)+16 ;say that 100% of values are wet (+16 for the weighted exp
 countmap[*,*,2] = countmap[*,*,2]-countmap[*,*,1]; wet-average
 countmap[*,*,1] = countmap[*,*,1]-countmap[*,*,0]; average - dry
 
-moist = ['dry', 'avg', 'wet']
-;;;look at it or write it out if needed;;;;;
-w=window()
+;three panel count map
+map_ulx = emap_ulx & min_lon = map_ulx
+map_lry = emap_lry & min_lat = map_lry
+map_uly = emap_uly & max_lat = map_uly
+map_lrx = emap_lrx & max_lon = map_lrx
+
+indir = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/Param_Noah3.3/'
+mfile_E = file_search(indir+'lis_input_ea_elev.nc')
+
+VOI = 'LANDCOVER'
+LC = get_nc(VOI, mfile_E)
+range = where(LC[*,*,6] gt 0.3, complement=other)
+rmask = fltarr(NX,NY)+1.0
+rmask(other)=!values.f_nan
+rmask(range)=1
+
+;;water and baresoil mask
+indir = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/Param_Noah3.3/'
+mfile_E = file_search(indir+'lis_input.MODISmode_ea.nc')
+
+VOI = 'LANDCOVER'
+LC = get_nc(VOI, mfile_E)
+bare = where(LC[*,*,15] eq 1, complement=other)
+water = where(LC[*,*,16] eq 1, complement=other)
+Emask = fltarr(eNX,eNY)+1.0
+Emask(bare)=!values.f_nan
+Emask(water)=!values.f_nan
+
+w = WINDOW(WINDOW_TITLE='June 1 outlook',DIMENSIONS=[NX+1600,NY+200])
+xsize=0.10
+ysize=0.10
+mlim = [min_lat,min_lon,max_lat,max_lon]
+ifile = file_search(strcompress(indir2+'/????/SURFACEMODEL/????'+STRING(format='(I2.2)', ESP_M) +'/LIS_HIST*.nc', /remove_all))
+ncolors = n_elements(ifile)+16 ;IBBP=20, UMD=14
+tercile = ['dry', 'avg', 'wet']
+
 for i = 0,2 do begin &$
-  temp = image(countmap[*,*,i], rgb_table=20, layout=[3,1,i+1], /current, min_value=0, max_value=36) &$
-  if i eq 2 then c=colorbar() &$
-  temp.title = 'count of '+string(moist[i]) &$
+  m1 = MAP('Geographic',LIMIT=mlim,/CURRENT,horizon_thick=1, layout = [3,1,i+1])  &$
+  p1 = image(countmap[*,*,i]*emask*rmask,rgb_table=20,image_dimensions=[nx*xsize,ny*ysize], image_location=[map_ulx,map_lry], $
+  MAP_PROJECTION='Geographic', XSTYLE=1, YSTYLE=1, /OVERPLOT) &$
+  rgbind = FIX(FINDGEN(ncolors)*255./(ncolors-1)) &$
+  rgbdump = p1.rgb_table & rgbdump = CONGRID(rgbdump[*,rgbind],3,256)  &$ ; just rewrites the discrete colorbar
+  ;rgbdump[*,0:(256/ncolors)] = rebin([190,190,190],3,(256/ncolors)+1)  &$
+ ; rgbdump[*,0] = rebin([0,255,255],3,1)  &$
+  p1.rgb_table = rgbdump  &$
+  ;use this if using all colors, not needed for nsims/2
+  p1.min_value = 0.5  &$
+  p1.max_value = ncolors+0.5  &$
+  p1.title = 'count of '+tercile[i] &$
+  if i eq 2 then c = COLORBAR(target=p1,ORIENTATION=1,/BORDER_ON, POSITION=[0.96,0.08,0.99,0.9])  &$
+  m1.mapgrid.linestyle = 6 &$
+  m1.mapgrid.label_show = 0  &$
+  m1.mapgrid.label_position = 0  &$
+  mc = MAPCONTINENTS(shapefile, /COUNTRIES,COLOR=[0,0,0],FILL_BACKGROUND=0,LIMIT=mlim)  &$
 endfor
 
-;check out the threshold maps
-w=window() 
-for M = 0,11 do begin &$  
-  ;for i = 0,2 do begin &$
-    i=1 &$   
-    temp = image(permap[*,*,M,i], rgb_table=20, layout=[3,4,m+1], /current, min_value=0, max_value=0.4) &$
-    if i eq 2 then c=colorbar() &$
-    temp.title = 'month= '+string(M+1)  &$
-  endfor &$
-endfor
-temp.save, '/home/almcnall/IDLplots/tritest3.png'
-
-ofile = strcompress('/home/almcnall/IDLplots/countmap_294_348_3_SM01.bin')
-openw,1,ofile
-writeu,1,countmap
-close,1
+p1.title = 'ncolors'

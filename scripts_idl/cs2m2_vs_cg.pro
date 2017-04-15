@@ -1,17 +1,37 @@
 pro CS2M2_vs_CG 
 
 ;plot some time series to show transition from Cs2M2 to CG runs
-;ugh, is this what i am supposed to be doing right now?
+;ugh, is this what i am supposed to be doing right now? (yes!)
+;update to be CHIRPS-prelim+GDAS vs CHIRPS-final+MERRA2 rainfall then figure out how that changes for soil moisture/other
 
 ;read in Jan16-Jan17 CHIRPS SM from 
-help, nx, ny
+.compile /home/almcnall/Scripts/scripts_idl/get_domain01.pro
+.compile /home/almcnall/Scripts/scripts_idl/get_nc.pro
+
+;; params = [NX, NY, map_ulx, map_lrx, map_uly, map_lry]
+domain = 'EA'
+params = get_domain01(domain)
+print, params
+
+NX = params[0]
+NY = params[1]
+map_ulx = params[2]
+map_lrx = params[3]
+map_uly = params[4]
+map_lry = params[5]
 
 ;readin jan-feb CHIRP-GDAS estimates from first try (and second try) and the RFE2+GDAS runs (maybe I can just use them)
-indir = '/discover/nobackup/projects/fame/MODEL_RUNS/EA_Noah33/ESPvanilla/Noah33_CG_ESPV_EA/Feb15/SURFACEMODEL/'
-indir = '/discover/nobackup/projects/fame/MODEL_RUNS/EA_Noah33/ESPvanilla/Noah33_CG_ESPV_EA/Feb20/SURFACEMODEL/'
-indir = '/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_RFE_GDAS_EA/SURFACEMODEL/'
+;run both of these thru LIS for Jan-March for the 'paper'
 
-ifile = file_search(strcompress(indir+'2017{01,02}/LIS_HIST*', /remove_all))  & help, ifile &$
+;indir = '/discover/nobackup/projects/fame/MODEL_RUNS/EA_Noah33/ESPvanilla/Noah33_CG_ESPV_EA/Feb15/SURFACEMODEL/'
+;indir = '/discover/nobackup/projects/fame/MODEL_RUNS/EA_Noah33/ESPvanilla/Noah33_CG_ESPV_EA/Feb20/SURFACEMODEL/'
+;indir = '/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_RFE_GDAS_EA/SURFACEMODEL/'
+
+indirP = '/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_EA/ESPvanilla/Noah33_CG_ESPV_EA/20170413/SURFACEMODEL/'
+indirF = '/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_EA/SURFACEMODEL/'
+
+
+ifile = file_search(strcompress(indirP+'201702/LIS_HIST*', /remove_all))  & help, ifile ;28daysx4per day
 ingrid3 = fltarr(nx, ny, n_elements(ifile))
 
 for f = 0, n_elements(ifile)-1 do begin &$
@@ -19,7 +39,7 @@ for f = 0, n_elements(ifile)-1 do begin &$
   ;read in all soil layers
   SM = get_nc(VOI, ifile[f]) &$
   ;just keep the top layer
-  SM0_10 = SM[*,*,0] &$
+  SM0_10 = SM[*,*,2] &$
   ingrid3[*,*,f] = SM0_10 &$
 endfor 
 
@@ -34,7 +54,7 @@ myind = FLOOR( (0.793458 - map_lry) / 0.1)
 
 ;plot the overlap between the two time series
 cat = [[ [smday[mxind, myind, 1:30]]],[[ingrid2[mxind, myind, *]]] ] & help, cat
-p1 = plot(ingrid[mxind, myind, *])
+p1 = plot(ingrid3[mxind, myind, *], /overplot,linestyle=3)
 p3 = plot(cat, 'g', /overplot)
 p2 = plot(smday[mxind,myind,1:30], /overplot, 'b')
 
