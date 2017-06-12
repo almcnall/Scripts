@@ -1,1 +1,0 @@
-pro Niger_yields
