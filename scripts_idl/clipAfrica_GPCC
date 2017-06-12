@@ -1,0 +1,31 @@
+pro clipAfrica_GPCC
+
+;this script clips the 1 degree GPCC global data (that splits africa) to the standard
+;africa domain. jan 1901-dec2010. Data originally here: http://www.esrl.noaa.gov/psd/data/gridded/data.gpcc.html
+;more info can be found in Shrad's netcdf file (see path below)...maybe i should copy this incase he delete's it.
+
+  ;;;;;;Africa window;;;;;;;;
+map_ulx = -20  & map_lrx = 55
+map_uly = 40  & map_lry = -40
+
+;switched from 0.5 degree to 1 degree
+ulx = (360+map_ulx)  & lrx = (0+map_lrx)
+uly = (90.+map_uly)  & lry = (90.+map_lry)
+ 
+gcfile = file_search('/home/chg-shrad/DATA/Precipitation_Global/GPCC/precip.mon.combined.total.v6.nc') ;precip.mon.total.v6.nc'
+fileID = ncdf_open(gcfile, /nowrite) &$
+gpccID = ncdf_varid(fileID,'precip') &$
+ncdf_varget,fileID, gpccID, gpcc
+gpcc = reverse(gpcc,2)
+DIMS = SIZE(GPCC,/dimensions)
+NX = dims(0)
+NY = dims(1)
+NZ = dims(2)
+;glb_shift=[gpcc[ulx:719,lry:uly,960:1319],gpcc[0:lrx,lry:uly,960:1319]]
+glb_shift = [gpcc[ulx:dims(0)-1,lry:uly,0:1367],gpcc[0:lrx,lry:uly,0:1367]] & help, glb_shift
+
+  ;write out and use for rest of study. move this to clipGPCC.pro
+
+temp  = image(mean(glb_shift,dimension=3,/nan), max_value=100)
+
+ 
