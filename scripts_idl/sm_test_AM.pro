@@ -100,7 +100,7 @@ tmpplt = BARPLOT(hlocs,h)
 
 tmpgr = PLOT(SM[x,y,*],SMp[x,y,*],'ob')
 
-;;;;;;;;;start here;;;;;;;;
+;;;;;;;;;AMY start here;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;; SOME STATS STUFF WITH MULTI-MONTH ACCUMULATIONS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -111,15 +111,19 @@ mo_names = ['January','February','March','April','May','June', $
             'July','August','September','October','November','December']
 mo_init = ['J','F','M','A','M','J','J','A','S','O','N','D']
 startyr = 1982          ; this is the first year that all data is available
-startmo = 6
-endmo = 5
+startmo = 10
+endmo = 2
 if startmo le endmo then nmos = endmo - startmo +1  $
    else nmos = endmo - startmo +13
 
 ; set some parameters for read-in and mapping
 ;data_dir = '/home/ftp_out/people/mcnally/FLDAS/FLDAS4DISC/NOAH_CHIRPSv2.001_MERRA2_EA/'
 data_dir = '/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_EA/post/'
+;data_dir = '/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_SA/post/'
+
 fname = data_dir+STRING('FLDAS_NOAH01_C_EA_M.A',startyr,startmo,'.001.nc',f='(a,I4.4,I2.2,a)')
+;fname = data_dir+STRING('FLDAS_NOAH01_C_EA_M.A',startyr,startmo,'.001.nc',f='(a,I4.4,I2.2,a)')
+
 fid = NCDF_OPEN(fname,/NOWRITE)
 NCDF_VARGET,fid,26,lon ;this one is wrong for some reason
 NCDF_VARGET,fid,27,lat
@@ -141,6 +145,7 @@ for i=0,nmos-1 do begin &$
    if moi gt 12 then moi = moi -12 &$
    ;data_dir = '/home/ftp_out/people/mcnally/FLDAS/FLDAS4DISC/NOAH_CHIRPSv2.001_MERRA2_EA/'
    fnames = FILE_SEARCH(data_dir,STRING('FLDAS_NOAH01_C_EA_M.A????',moi,'.001.nc',f='(a,I2.2,a)')) &$
+   print, fnames &$
    nyrs = N_ELEMENTS(fnames) &$
    ;ncdf_list,fnames[0],/VARIABLES, /DIMENSIONS, /GATT, /VATT
    fid = NCDF_OPEN(fnames[0],/NOWRITE) &$
