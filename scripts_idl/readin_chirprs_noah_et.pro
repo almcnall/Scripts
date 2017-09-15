@@ -7,7 +7,7 @@ pro readin_CHIRPRS_NOAH_ET
 ;.compile /home/almcnall/Scripts/scripts_idl/nve.pro
 ;.compile /home/almcnall/Scripts/scripts_idl/mve.pro
 
-startyr = 1982 ;start with 1982 since no data in 1981, or 2003 if for SSEB compare
+startyr = 2003 ;start with 1982 since no data in 1981, or 2003 if for SSEB compare
 endyr = 2017
 nyrs = endyr-startyr+1
 
@@ -26,7 +26,8 @@ map_lrx = params[3]
 map_uly = params[4]
 map_lry = params[5]
 
-;;;;;;use hymap runoff vs. non-routed;;;;
+;;read in the data...should make the domain automatic. it is in some scripts, right?
+;data_dir='/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_WA/post/'
 ;data_dir='/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_SA/post/'
 data_dir='/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_EA/post/'
 
@@ -41,6 +42,8 @@ for yr=startyr,endyr do begin &$
   y = y+1 &$
 endif &$
   ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_C_EA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
+  ;ifile = file_search(data_dir+STRING(FORMAT='(''FLDAS_NOAH01_C_SA_M.A'',I4.4,I2.2,''.001.nc'')',y,m)) &$
+
   
   ;variable of interest
   VOI = 'Evap_tavg' &$ 

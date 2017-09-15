@@ -1,7 +1,24 @@
 pro make_spagetti
 
+
+
+.compile /home/almcnall/Scripts/scripts_idl/get_nc.pro
+.compile /home/almcnall/Scripts/scripts_idl/get_domain01.pro
+
+;; params = [NX, NY, map_ulx, map_lrx, map_uly, map_lry]
+domain = 'EA'
+params = get_domain01(domain)
+print, params
+
+NX = params[0]
+NY = params[1]
+map_ulx = params[2]
+map_lrx = params[3]
+map_uly = params[4]
+map_lry = params[5]
+
 ;;;forecast intialization date
-startd = '20170331'
+startd = '20170820'
 ;startd = '20170228'
 
 ;yrs used for the ESPing
@@ -20,7 +37,7 @@ indir2 = NOAHdir+'Noah33_CHIRPS_MERRA2_EA/ESPvanilla/Noah33_CM2_ESPV_EA/'+string
 ;where did 208 come from? 11 because 12 months, starting in feb
 ;is there a reason to start this in jan?
 ;enter month of intitialzation 1 = 20170131, 3 = march, output for april though...
-initmo = 2
+initmo = 8
 nmos = 12
 espgrid = fltarr(NX, NY, nmos,nyrs)*!values.f_nan
 ;go into the outter directory...
@@ -40,6 +57,7 @@ for i = 0, nyrs-1 do begin &$
   cnt++ &$
   print, cnt &$
 endfor 
+espgrid(where(espgrid lt 0))=!values.f_nan
 ;make a stack of all of the data and then pull out a point.
 ;ifile = file_search(strcompress(indir2+'/????/SURFACEMODEL/????01/LIS_HIST*.nc', /remove_all))
 help, ifile
@@ -60,6 +78,7 @@ help, sm01
 ;ensmean = median(espgrid, dimension = 4) & help, ensmean
 ;also include the historic mean
 histmean = median(sm01, dimension = 4) & help, histmean
+
 ;concatinate Dec31 as Jan1 to fix alighnment
 ;this doesn't work so great if i need to plot more than a point.
 histshift = [ [[histmean[*,*,11]]], [[histmean[*,*,0:10]]] ]
@@ -85,7 +104,7 @@ endfor  &$
 endfor
 
 w = window(DIMENSIONS=[1900,900])
-;;plot the timeseries for this yr
+;;plot the timeseries for this yr, how to concat august to sept, outputs...
 for n = 0, n_elements(espgrid[0,0,0,*])-1 do begin &$
   p1 = plot(espgrid[mxind, myind, *, n], /overplot, color='cyan', name = 'ESP ENS') &$
   ;p1.save, '/home/almcnall/IDLplots/ts_mxing2.png' &$

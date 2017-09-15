@@ -4,8 +4,154 @@
 ; 8/30/16 add timeseries for regions of interest
 ; 9/01/16 try to fix crashing problems by not using ide
 ; 6/06/17 check the water balance at Thika
+; 7/06/17 add extract data by HYMAP basin (readin_HYMAP_basin.pro)
+; 9/14/17 update with the basins from Kris (do this in readin_HYMAP_basin.pro)
 
-HELP, RO, TAir, SMM3, rain, Evap
+;ET=SSEB and which is Evap=Noah
+HELP, rain, Evap, ET, gvf, eacube01, RO
+HELP, RO, TAir, SMM3, SM01, eacube01, SM01
+help, bnile_mask, nile_mask, jsb_mask, awash_mask, rufi_mask, utana_mask
+help, zamb_mask, limp_mask,  rufi_mask, orng_mask, pag_mask, inco_mask, hwan_mask
+help, mana_mask
+
+;;plot the SM01 time series for the zambiezi basin & write out csv
+;help, sm01
+;sm01_v = reform(sm01[*,*,*,0:32],nx, ny, 33*nmos) & help, sm01_v
+;zmask396 = rebin(zamb_mask, nx, ny, 396)
+;p1 = plot(mean(mean(sm01_v*zmask396,dimension=1,/nan),dimension=1,/nan), /overplot, 'b')
+;z_sm01_ts = mean(mean(sm01_v*zmask396,dimension=1,/nan),dimension=1,/nan) & help, z_sm01_ts
+nx = 295
+ny = 348
+
+;;plot the rainfall and ET time series for the blue nile basin
+help, rain, evap, ro_chirps01, ro, et, eacube01
+mask432 = rebin(bnile_mask, nx, ny, 432)
+mask432 = rebin(awash_mask, nx, ny, 432)
+mask432 = rebin(rufi_mask, nx, ny, 432)
+mask432 = rebin(utana_mask, nx, ny, 432)
+mask432 = rebin(jsb_mask, nx, ny, 432)
+mask432 = rebin(luku_mask, nx, ny, 432)
+
+
+mask432 = rebin(orng_mask, nx, ny, 432)
+mask432 = rebin(zamb_mask, nx, ny, 432)
+mask432 = rebin(limp_mask, nx, ny, 432)
+mask432 = rebin(pag_mask, nx, ny, 432)
+mask432 = rebin(inco_mask, nx, ny, 432)
+mask432 = rebin(mana_mask, nx, ny, 432)
+
+
+rain_v = reform(rain,nx, ny, nmos*nyrs) & help, rain_v
+;plot full time series
+;p1 = plot(mean(mean(rain_v*blue432,dimension=1,/nan),dimension=1,/nan), /overplot, 'b')
+;plot the monthly averages (is that right? what is the monthly total
+
+rain_mon = mean(mean(mean(rain*mask432,dimension=1,/nan),dimension=1,/nan), dimension=2,/nan)*86400*30 & help, rain_mon
+ro_mon = mean(mean(mean(ro*mask432,dimension=1,/nan),dimension=1,/nan), dimension=2,/nan)*86400*30 & help, ro_mon
+
+evap_mon = mean(mean(mean(evap[*,*,*,*]*mask432,dimension=1,/nan),dimension=1,/nan), dimension=2,/nan)*86400*30 & help, evap_mon
+et_mon = mean(mean(mean(et[*,*,*,0:13]*mask432,dimension=1,/nan),dimension=1,/nan), dimension=2) & help, et_mon
+;alexi_mon = mean(mean(mean(eacube01*mask432,dimension=1,/nan),dimension=1,/nan), dimension=2) & help, alexi_mon
+
+gvf_mon =  mean(mean(gvf*mask432,dimension=1,/nan),dimension=1,/nan) & help, gvf_mon
+
+rain_cum = total(mean(mean(mean(rain*mask432,dimension=1,/nan),dimension=1,/nan), dimension=2,/nan)*86400*30, /cumulative) & help, rain_cum
+ro_cum = total(mean(mean(mean(ro*mask432,dimension=1,/nan),dimension=1,/nan), dimension=2,/nan)*86400*30, /cumulative) & help, ro_cum
+
+evap_cum = total(mean(mean(mean(evap*mask432,dimension=1,/nan),dimension=1,/nan), dimension=2,/nan)*86400*30, /cumulative) & help, evap_cum
+et_cum = total(mean(mean(mean(et*mask432,dimension=1, /nan),dimension=1, /nan), dimension=2), /cumulative) & help, et_cum
+;alexi_cum = total(mean(mean(mean(eacube01*mask432,dimension=1, /nan),dimension=1, /nan), dimension=2), /cumulative) & help, alexi_cum
+
+ro_ts = reform(mean(mean(ro*mask432,dimension=1,/nan),dimension=1,/nan)*86400*30, nmos*nyrs) & help, ro_ts
+ro_ts_cap = ro_ts
+ro_ts_cap(where(ro_ts_cap gt 12))=12
+ro_ts_cap_cube_avg = mean(reform(ro_ts_cap,12,36),dimension=2,/nan) & help, ro_ts_cap_cube_avg
+ro_ts_anom = ro_ts_cap-reform(rebin(ro_mon,12,36),12*36) & help, ro_ts_anom
+
+evap_ts = reform(mean(mean(evap*mask432,dimension=1,/nan),dimension=1,/nan)*86400*30, nmos*nyrs) & help, evap_ts
+et_ts = reform(mean(mean(et*mask432,dimension=1,/nan),dimension=1,/nan), nmos*nyrs) & help, et_ts
+;alexi_ts = reform(mean(mean(eacube01*mask432,dimension=1,/nan),dimension=1,/nan), nmos*nyrs) & help, alexi_ts
+et_ts(where(et_ts eq 0)) = !values.f_nan
+
+
+gvf_cum = total(mean(mean(gvf*mask432,dimension=1,/nan),dimension=1,/nan),  /cumulative) & help, gvf_cum
+
+;linestly 2 = dash 0=solid
+linestyle = 0
+p1 = plot(rain_cum, /current)
+p1 = plot(rain_mon,'black',linestyle=2, /overplot)
+
+p1 = plot(gvf_cum*100, 'g', /overplot)
+p1 = plot(gvf_mon*100,'g',linestyle=linestyle, /overplot)
+
+;w=window()
+p1 = plot(evap_cum, 'b', /overplot, thick=2)
+p1 = plot(evap_mon,'b',linestyle=linestyle, thick=2, /overplot)
+
+p1 = plot(et_cum, 'c',  /overplot, thick=2)
+p1 = plot(et_mon,'c',linestyle=linestyle, thick=2, /overplot)
+
+p1 = plot(alexi_cum, 'orange',  /overplot)
+p1 = plot(alexi_mon,'orange',linestyle=linestyle, /overplot)
+ p1.title = 'Juba Shabelle basin SSEB (cyan), Noah-ET (blue), CHIRPS rainfall (black), GVF(green), ALEXI(orange)'
+ 
+p1 = plot(ro_cum, 'orange', /overplot)
+p1 = plot(ro_mon,'orange',linestyle=2, /overplot)
+
+p1.title = 'Upper Tana basin rainfall (blue), ET(green), RO(orange)'
+
+w=window()
+dummy = LABEL_DATE(DATE_FORMAT=['%Y-%M'])
+time82 = TIMEGEN(START=JULDAY(1,1,1982), FINAL=JULDAY(12,31,2017), units='months')
+
+p1=plot(time82,ro_ts_cap, /current, xrange=[min(time82),max(time82)], xtickformat='label_date')
+p1=barplot(time82,ro_ts_anom, /current, xrange=[min(time82),max(time82)], xtickformat='label_date', font_size=12, title = 'Mananbovo basin runoff monhtly anomalies')
+
+
+p1 = plot(evap_ts, 'b', /overplot)
+p1 = plot(et_ts, 'c', /overplot)
+;p1 = plot(alexi_ts, 'g', /overplot)
+
+;;anomalies
+evap_anom = evap_ts-reform(rebin(evap_mon,nmos,nyrs),nmos*nyrs) & help, evap_anom
+et_anom = et_ts-reform(rebin(et_mon,nmos,nyrs),nmos*nyrs) & help, et_anom
+;alexi_anom = alexi_ts-reform(rebin(alexi_mon,12,7),12*7) & help, alexi_anom
+;alexi_anom(where(alexi_anom lt -20)) = !values.f_nan
+
+p1 = plot(evap_ts, 'b', /overplot)
+p1 = plot(et_ts, 'c', /overplot)
+
+;annomaly correlations.....p-correlation, r-correlation
+NvS = r_correlate(evap_anom,et_anom) & print, NvS
+NvA = r_correlate(evap_anom,alexi_anom) & print, NvA
+SvA =  r_correlate(et_anom,alexi_anom) & print, SvA
+
+
+w=window()
+p1 = plot(evap_anom, 'b', /overplot)
+p1 = plot(et_anom, 'c', /overplot)
+p1 = plot(alexi_anom, 'orange',thick=1, /overplot)
+;p1.title = 'Blue Nile ET anomalies & rank corr. Noah(blue)|SSEBop(cyan)(0.52)'
+;p1.title = 'Awash ET anomalies & rank corr. Noah(blue)|SSEBop(cyan)(0.73)'
+p1.title = 'Upper Tana ET anomalies & rank corr.Noah(blue)|SSEBop(cyan)(0.69)'
+p1.title = 'Juba Shebelle ET anomalies & rank corr.Noah(blue)|SSEBop(cyan)(0.78)'
+p1.title = 'Rujfiji Basin ET anomalies & rank corr.Noah(blue)|SSEBop(cyan)(0.56)'
+p1.title = 'Pangani Basin ET anomalies & rank corr.Noah(blue)|SSEBop(cyan)(0.74)'
+
+p1.title = 'Zambezi Basin ET anomalies & rank corr.Noah(blue)|SSEBop(cyan)(0.72)'
+
+
+
+
+;;scatter plot of SM01 and ECV
+ifile = file_search('/home/almcnall/IDLplots/Zamb_EVC_SM01.csv')
+sm_est = read_csv(ifile, header=header)
+
+dummy = LABEL_DATE(DATE_FORMAT=['%Y-%M'])
+time82 = TIMEGEN(START=JULDAY(1,1,1982), FINAL=JULDAY(12,31,2014), units='months')
+
+p1 = plot(time82, sm_est.field1,xrange=[min(time82),max(time82)], xtickformat='label_date')
+p1 = plot(time82, sm_est.field2-0.2,xrange=[min(time82),max(time82)], xtickformat='label_date', /overplot, 'b', yrange=[-0.2,0.2])
 
 ;point vs basin values. More when totaling.
 ;just a point for the water balance

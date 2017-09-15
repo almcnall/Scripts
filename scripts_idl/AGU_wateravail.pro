@@ -150,7 +150,7 @@ nyrs82 = n_elements(RO_CHIRPS01[0,0,0,*])
 ;ROvect01 = reform(RO_RFE01,NX,NY,nmos*nyrs01) & help, ROvect01
 ROvect82 = reform(RO_CHIRPS01,NX,NY,nmos*nyrs82) & help, ROvect82
 
-;
+;;;;compute ROC here;;;;;;;;
 ;;;this is the moving averages. where are the PON maps?
 ;maybe that buffer is essential
 tic
@@ -392,7 +392,7 @@ close
 
 
 
-
+;;;revisit this July 5, 2017
 ;;;;next, make time series to compare RFE2 and CHIRPS 
 ;;;;first average over the watershed then compute anomalies;;;;
 

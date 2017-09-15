@@ -1,5 +1,6 @@
 pro ESP_timeseries
 ;read in all historic soil moisture
+;this one contains ways to plot daily...v2 is just monthly.
 
 .compile /home/almcnall/Scripts/scripts_idl/get_domain01.pro
 .compile /home/almcnall/Scripts/scripts_idl/get_nc.pro
@@ -43,6 +44,7 @@ map_lry = params[5]
 mxind = FLOOR( (43.530140 - map_ulx)/ 0.1)
 myind = FLOOR( (2.660781 - map_lry) / 0.1)
 
+;;;read in SM01 from readin_FLDAS_noah_sm.pro;;;;;
 ;;;monthly plots;;;;;;;
 histmean = median(sm01, dimension = 4) & help, histmean
 p0=plot(histmean[mxind,myind,*], thick = 3, /overplot, title='c2m2 clim')
@@ -52,15 +54,19 @@ p0=plot(histmean[mxind,myind,*], thick = 3, /overplot, title='c2m2 clim')
 ;  if i eq 0 then p2.title='c2m2' &$
 ;endfor
 ;;then plot monthly C2final - M2 for this year
-;p3=plot(SM01[mxind,myind,*,35], thick = 3, 'orange', /overplot, title='2017')
+p3=plot(SM01[mxind,myind,*,35], thick = 3, 'orange', /overplot, title='2017')
 
-;;;daily plots;;;;;;;
+;;;daiy plots;;;;;;;
+;;;get the daily data from CHIRPS-prelim (and take the mean);;;;
 rundir = '/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_EA/ESPvanilla/'
 ;then plot Cprelim for this year...daily then monthly
-indirP = rundir+'Noah33_CG_ESPV_EA/20170413_CP/SURFACEMODEL/'
+;indirP = rundir+'Noah33_CG_ESPV_EA/20170413_CP/SURFACEMODEL/'
+indirP = rundir+'Noah33_CG_ESPV_EA/201708/SURFACEMODEL/'
+
 ingridP = fltarr(nx, ny, 31, 12)*!values.f_nan
 
-for m = 1,3 do begin &$
+;for m = 1,3 do begin &$
+  m = 8
   y = 2017 &$
   YYYYMM = STRING(FORMAT='(I4.4,I2.2)',y,m) &$
   ifile = file_search(strcompress(indirP+YYYYMM+'/LIS_HIST*', /remove_all))  & help, ifile &$ ;28daysx4per day
@@ -74,52 +80,58 @@ for m = 1,3 do begin &$
     SM0_10 = SM[*,*,0] &$
     ingridP[*,*,f,m-1] = SM0_10 &$
   endfor &$
-endfor
+;endfor
 
 ;daily CHIRPS-prelim
 ;reform to elimate the gap
 jfm = [ reform(ingridP[mxind, myind,0:30,0], 31), reform(ingridP[mxind, myind,0:27,1],28), reform(ingridP[mxind, myind,0:30,2],31) ]
 p1=plot(jfm, thick=3,'red', name = 'Cprelim', /overplot)
 delvar, ingridP
+
 ;monthly plots
 Cprelim = mean(ingridP,dimension=3,/nan)
 p1 = plot(Cprelim[mxind,myind,*], 'red', thick=3, name='Cprelim', /overplot)
+;;insert august to the July Chirps-final and the esp-spegetti, or concat to all the ESP plots.
+TS = reform(SM01[mxind,myind,*,35]) & help, TS
+TS[7]= cprelim[mxind, myind, m-1]
+p3=plot(TS, thick = 3, 'orange', /overplot, title='2017')
 
-;;;;read in Jan, Feb daily CHIRPS-final, so i can see intial conditions for CPrelim
-indirF = '/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_EA/SURFACEMODEL/'
-ingridF = fltarr(nx, ny, 31, 12)*!values.f_nan
 
-for m = 1,3 do begin &$
-  y = 2017 &$
-  YYYYMM = STRING(FORMAT='(I4.4,I2.2)',y,m) &$
-  ifile = file_search(strcompress(indirF+YYYYMM+'/LIS_HIST*', /remove_all))  & help, ifile &$ ;28daysx4per day
-  for f = 0, n_elements(ifile)-1 do begin &$
-  VOI = 'SoilMoist_tavg' &$
-  ;read in all soil layers
-  SM = get_nc(VOI, ifile[f]) &$
-  ;just keep the top layer
-  SM0_10 = SM[*,*,0] &$
-  ingridF[*,*,f,m-1] = SM0_10 &$
-endfor &$
-endfor
+;;;;read in Jan, Feb daily CHIRPS-final, shelpo i can see intial conditions for CPrelim
+;indirF = '/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_EA/SURFACEMODEL/'
+;ingridF = fltarr(nx, ny, 31, 12)*!values.f_nan
+;
+;for m = 1,3 do begin &$
+;  y = 2017 &$
+;  YYYYMM = STRING(FORMAT='(I4.4,I2.2)',y,m) &$
+;  ifile = file_search(strcompress(indirF+YYYYMM+'/LIS_HIST*', /remove_all))  & help, ifile &$ ;28daysx4per day
+;  for f = 0, n_elements(ifile)-1 do begin &$
+;  VOI = 'SoilMoist_tavg' &$
+;  ;read in all soil layers
+;  SM = get_nc(VOI, ifile[f]) &$
+;  ;just keep the top layer
+;  SM0_10 = SM[*,*,0] &$
+;  ingridF[*,*,f,m-1] = SM0_10 &$
+;endfor &$
+;endfor
+;
+;Fjfm = [ reform(ingridF[mxind, myind,0:30,0], 31), reform(ingridF[mxind, myind,0:27,1],28), reform(ingridF[mxind, myind,0:30,2],31) ]
+;p2=plot(Fjfm, thick=3,'orange', name = 'Cfinal', /overplot)
+;;monthly plots
+;Cfinal = mean(ingridF,dimension=3,/nan)
+;p2 = plot(Cfinal[mxind,myind,*], 'orange', thick=3, name='Cfinal', /overplot)
 
-Fjfm = [ reform(ingridF[mxind, myind,0:30,0], 31), reform(ingridF[mxind, myind,0:27,1],28), reform(ingridF[mxind, myind,0:30,2],31) ]
-p2=plot(Fjfm, thick=3,'orange', name = 'Cfinal', /overplot)
-;monthly plots
-Cfinal = mean(ingridF,dimension=3,/nan)
-p2 = plot(Cfinal[mxind,myind,*], 'orange', thick=3, name='Cfinal', /overplot)
-
-;now plot combo, Cfinalial intialized + Cprelim
-ifile = file_search(strcompress(rundir+'/Noah33_CG_ESPV_EA/201703/SURFACEMODEL/201703/LIS_HIST*', /remove_all))
-ingridC = fltarr(nx, ny, 31)
-for f = 0, n_elements(ifile)-1 do begin &$
-  VOI = 'SoilMoist_tavg' &$
-  ;read in all soil layers
-  SM = get_nc(VOI, ifile[f]) &$
-  ;just keep the top layer
-  SM0_10 = SM[*,*,0] &$
-  ingridC[*,*,f] = SM0_10 &$
-endfor
+;;now plot combo, Cfinalial intialized + Cprelim
+;ifile = file_search(strcompress(rundir+'/Noah33_CG_ESPV_EA/201703/SURFACEMODEL/201703/LIS_HIST*', /remove_all))
+;ingridC = fltarr(nx, ny, 31)
+;for f = 0, n_elements(ifile)-1 do begin &$
+;  VOI = 'SoilMoist_tavg' &$
+;  ;read in all soil layers
+;  SM = get_nc(VOI, ifile[f]) &$
+;  ;just keep the top layer
+;  SM0_10 = SM[*,*,0] &$
+;  ingridC[*,*,f] = SM0_10 &$
+;endfor
 
 ;march = mean(ingrid, dimension=3,/nan)
 march = reform(ingridC[mxind, myind,*],31)
@@ -137,7 +149,7 @@ p3 = plot(initial_m,  '*', sym_size=4, sym_thick=3, name='Ccombo', xrange=[0,11]
 
 ;;then plot the ESP results from CHIRPS-final + CHIRPS-prelim - how do i do this?
 ;;;forecast intialization date
-startd = '20170331'
+startd = '20170820'
 ;startd = '20170228'
 
 ;yrs used for the ESPing
@@ -156,35 +168,62 @@ indir2 = NOAHdir+'Noah33_CHIRPS_MERRA2_EA/ESPvanilla/Noah33_CM2_ESPV_EA/'+string
 ;where did 208 come from? 11 because 12 months, starting in feb
 ;is there a reason to start this in jan?
 ;enter month of intitialzation 1 = 20170131, 3 = march, output for april though...
-initmo = 3
+initmo = 8
 nmos = 12
-;espgrid = fltarr(NX, NY, nmos,nyrs)*!values.f_nan
-espgrid = fltarr(NX, NY, 31,12,nyrs)*!values.f_nan
+espgrid = fltarr(NX, NY, nmos,nyrs)*!values.f_nan
+;espgrid = fltarr(NX, NY, 31,12,nyrs)*!values.f_nan
 
 cnt = 0
 for i = 0, nyrs-1 do begin &$
-    y = i+1982 &$
-    print, y &$
-    for m = 4,6 do begin &$
-    ;m = 4 &$
-    YYYYMM = STRING(FORMAT='(I4.4,I2.2)',y,m) &$
-    ;just read in all the LIS_HISTFILES for a given run...super pasgetti
-    ifile = file_search(strcompress(indir2+string(yr[i])+'/SURFACEMODEL/'+string(YYYYMM)+'/LIS_HIST*', /remove_all))  & help, ifile &$
-    for f = 0, n_elements(ifile)-1 do begin &$
-      VOI = 'SoilMoist_tavg' &$
-      ;read in all soil layers
-      SM = get_nc(VOI, ifile[f]) &$
-      ;just keep the top layer
-      SM0_10 = SM[*,*,0] &$
-      ;start on the intialization month to keep the first months empty...ESPout on first of month?
-      espgrid[*,*,f,m-1,i] = SM0_10 &$
-    endfor &$
-  endfor &$
-  cnt++ &$
-  print, cnt &$
+  ;just read in all the LIS_HISTFILES for a given run...super pasgetti
+  ifile = file_search(strcompress(indir2+string(yr[i])+'/SURFACEMODEL/??????/LIS_HIST*', /remove_all))  & help, ifile &$
+  for f = 0, n_elements(ifile)-1 do begin &$
+  VOI = 'SoilMoist_tavg' &$
+  ;read in all soil layers
+  SM = get_nc(VOI, ifile[f]) &$
+  ;just keep the top layer
+  SM0_10 = SM[*,*,0] &$
+  ;start on the intialization month to keep the first months empty...ESPout on first of month?
+  espgrid[*,*,f+initmo,cnt] = SM0_10 &$
+endfor &$
+cnt++ &$
+print, cnt &$
 endfor
+espgrid(where(espgrid lt 0))=!values.f_nan
 
-m_espgrid = mean(espgrid, dimension=3, /nan)
+pnt_esp = espgrid[mxind,myind,*,*] & help, pnt_esp
+pnt_esp[0,0,7,*]=cprelim[mxind, myind, m-1]
+for n = 0, n_elements(pnt_esp[0,0,0,*])-1 do begin &$
+  p1 = plot(pnt_esp[0, 0, *, n], /overplot, color='cyan', name = 'ESP ENS') &$
+  ;p1.save, '/home/almcnall/IDLplots/ts_mxing2.png' &$
+endfor
+p2 = plot(mean(pnt_esp,dimension=4,/nan), 'b', thick=2)
+
+;ugh, this is set up for DAYS in a month...
+;cnt = 0
+;for i = 0, nyrs-1 do begin &$
+;    y = i+1982 &$
+;    print, y &$
+;    for m = 9,11 do begin &$
+;    ;m = 8 &$
+;    YYYYMM = STRING(FORMAT='(I4.4,I2.2)',y,m) &$
+;    ;just read in all the LIS_HISTFILES for a given run...super pasgetti
+;    ifile = file_search(strcompress(indir2+string(yr[i])+'/SURFACEMODEL/'+string(YYYYMM)+'/LIS_HIST*', /remove_all))  & help, ifile &$
+;    for f = 0, n_elements(ifile)-1 do begin &$
+;      VOI = 'SoilMoist_tavg' &$
+;      ;read in all soil layers
+;      SM = get_nc(VOI, ifile[f]) &$
+;      ;just keep the top layer
+;      SM0_10 = SM[*,*,0] &$
+;      ;start on the intialization month to keep the first months empty...ESPout on first of month?
+;      espgrid[*,*,f,m-1,i] = SM0_10 &$
+;    endfor &$
+;  endfor &$
+;  cnt++ &$
+;  print, cnt &$
+;endfor
+
+;m_espgrid = mean(espgrid, dimension=3, /nan)
 ;what did i do with the intial condition??
 
 for i = 0, nyrs-1 do begin &$

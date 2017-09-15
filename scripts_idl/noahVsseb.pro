@@ -1,3 +1,5 @@
+pro noahVssseb
+
 ;this script is to calculate the aquestat indices
 ; 01/10/16 using this as a start to the SSEB compare (again)
 ; 03/18/16 revisit for MERRA2 comparisons
@@ -11,6 +13,7 @@
 ; 10/26/16 separate out the MED and PON calculations for 3 domains
 ; 02/10/17 set up workflow...(0) generate median files for FLDAS (1) clip ETA files to domain [LVT option] 
 ; (2) do the PON calculation for FLDAS (3) plot ETA and FLDAS side by side
+; 08/15/17 revisit to update the SSEBv4 (not-anomaly), use pon_med4sseb.pro to compute percent of median
 
 .compile /home/almcnall/Scripts/scripts_idl/get_nc.pro
 .compile /home/almcnall/Scripts/scripts_idl/get_domain01.pro
@@ -22,12 +25,12 @@
 ;.compile /home/source/mcnally/scripts_idl/get_nc.pro
 
 startyr = 2003 ;start with 1982 since no data in 1981
-endyr = 2016
+endyr = 2017
 nyrs = endyr-startyr+1
 
 ;re-do for all months
-startmo = 1
-endmo = 12
+startmo = 5
+endmo = 7
 nmos = endmo - startmo+1
 
 ;params = get_domain25('WA')
@@ -93,6 +96,8 @@ Wmask(water)=!values.f_nan
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;SUBSET the region of interest an most up-to-date files 
 ;from the Africa_ETA_file with clipssebtoeros.pro
+;for SSEBv4 readinSSEB_ET_AF01K.pro (clip)
+; readin with readinSSEB_ET_EA01.pro (read ET)
 
 ;indir = '/discover/nobackup/projects/fame/Validation/SSEB/ETA_AFRICA/'
 
@@ -113,8 +118,66 @@ Wmask(water)=!values.f_nan
 ;close,1
 
 ;;;;;;;;;;get PON values from PON_MED4SSEB.pro;;;;;;;;;;;;;;
-help, PONe, PONs, PONw
+help, PONe, PONs, PONw, PONe_SSEB
 help, eta
+;just difference anomalies...rathern than percent of median...
+help, et
+help, evap
+help, PON_evap, PON_et
+
+;;;PLOT both and the difference;;;;;; see correlation below...
+;;;;buffer is a million times faster for this! don't print to screen!;;;;
+;;;LIKE FIGURE FOR PAPER BUT EA ;;;;;;
+map_ulx = emap_ulx & min_lon = map_ulx
+map_lry = emap_lry & min_lat = map_lry
+map_uly = emap_uly & max_lat = map_uly
+map_lrx = emap_lrx & max_lon = map_lrx
+mask = emask
+NX = eNX
+NY = eNY
+
+shapefile = '/discover/nobackup/almcnall/GAUL_2013_2012_0.shapefiles/G2013_2012_0.shp'
+
+;plots for individual months..used in the Usage notes section (move down)
+month = ['jan', 'feb', 'mar','apr','may','jun','jul','aug','sep','oct','nov','dec']
+w = WINDOW(DIMENSIONS=[1100,900]);works for EA 700x900
+mlim = [min_lat,min_lon,max_lat,max_lon]
+m1 = MAP('Geographic',LIMIT=mlim,/CURRENT,horizon_thick=1)
+xsize=0.10
+ysize=0.10
+
+index = [0,50,70,90,110,130,150];
+ncolors = n_elements(index)
+CT=COLORTABLE(73) ;keep this so i can change values.
+;y=n_elements(PONe[0,0,0,*])-1
+;m=6 ;zero index 1=feb
+;for y = 0,13 do begin &$
+;tmptr = CONTOUR(PONe_SSEB[*,*,m,y]*mask,$
+;tmptr = CONTOUR(PON_evap[*,*,14]*mask,$
+  tmptr = CONTOUR(PON_evap*mask,$
+  FINDGEN(NX)*(xsize)+ min_lon, FINDGEN(NY)*(ysize)+min_lat, BACKGROUND_COLOR='WHITE', $
+  RGB_TABLE=CT, /FILL, ASPECT_RATIO=1, Xstyle=1,Ystyle=1, /overplot, $
+  C_VALUE=index, RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors)) &$ ;am i using RGB_INDICES here?
+  ct[108:108+36,*] = 200  &$
+  tmptr.rgb_table=ct  &$
+  tmptr.mapgrid.linestyle = 6 & tmptr.mapgrid.label_position = 0
+; mycont = MAPCONTINENTS(shapefile, /COUNTRIES,HIRES=1, thick=2) &$
+;  tmptr.mapgrid.linestyle = 'none'  &$ ; could also use 6 here
+;  tmptr.mapgrid.FONT_SIZE = 10
+;tmptr.mapgrid.label_position = 0; x1, y1, x2, y2
+cb = colorbar(target=tmptr,ORIENTATION=1,TAPER=1,/BORDER, font_size=12, TITLE='ETa anomaly %', POSITION=[.96,.35,0.99,.75])
+mc = MAPCONTINENTS(shapefile, /COUNTRIES,COLOR=[0,0,0],FILL_BACKGROUND=0,LIMIT=mlim, thick=2)
+tmptr.title = 'Percent of median (2003-2015) May-Sept Outlook 2017 NOAH-ET'
+tmptr.save,'/home/almcnall/IDLplots/NOAHpon_JUL_2017.png'
+
+;;;;;;plot the difference;;;
+p1 = image((PON_evap[*,*,14]-PON_et[*,*,14])*mask, rgb_table=67, image_dimensions=[nx/10,ny/10], $
+;p1 = image(PONe[*,*,m,y]-PONe_SSEB[*,*,m,y], rgb_table=67, image_dimensions=[nx/10,ny/10], $
+           image_location=[map_ulx,map_lry], /current, margin = 0.1)
+  m1 = MAP('Geographic',limit=[map_lry,map_ulx,map_uly,map_lrx], /overplot, horizon_thick=1)
+  m1.mapgrid.linestyle = 6 & m1.mapgrid.label_position = 0
+  mc = MAPCONTINENTS(shapefile, /COUNTRIES,COLOR=[0,0,0],FILL_BACKGROUND=0,LIMIT=mlim)
+  cb = colorbar(target=p1,ORIENTATION=1,TAPER=1,/BORDER, font_size=12, TITLE='ET anom difference', POSITION=[.96,.35,0.99,.75])
 
 ;monthly correlations
 ;these are kinda slow, only calc when needed
@@ -138,8 +201,11 @@ ssebTSe = reform(eta[*,*,*,0:13],eNX,ENY, 12*14)
 noahTSs = reform(pons,sNX,sNY, 12*14)
 ssebTSs = reform(etas,sNX,sNY, 12*14)
 
-noahTSw = reform(ponw,wNX,wNY, 12*14)
-ssebTSw = reform(etaw,wNX,wNY, 12*14)
+noahTSs = reform(evap_anom,sNX,sNY, 12*14)
+ssebTSs = reform(et_anom,sNX,sNY, 12*14)
+
+noahTSw = reform(ponw,wNX,wNY, 12*15)
+ssebTSw = reform(ponw_sseb,wNX,wNY, 12*15)
 
 ;ssebTS = ETA_V[*,*,0:155]
 ;vicTS = reform(ponV,NX,NY, 12*14)
@@ -162,7 +228,7 @@ nx = snx
 ny = sny
 for x = 0, nx-1 do begin &$
   for y = 0,ny-1 do begin &$
-  cormap2s[x,y,*] = correlate(noahTSs[x,y,0:158], ssebTSs[x,y,0:158]) &$
+  cormap2s[x,y,*] = correlate(noahTSs[x,y,*], ssebTSs[x,y,*]) &$
 endfor &$
 endfor
 
@@ -170,7 +236,7 @@ nx = wnx
 ny = wny
 for x = 0, nx-1 do begin &$
   for y = 0,ny-1 do begin &$
-  cormap2w[x,y,*] = correlate(noahTSw[x,y,0:158], ssebTSw[x,y,0:158]) &$
+  cormap2w[x,y] = correlate(noahTSw[x,y,0:167], ssebTSw[x,y,0:167]) &$
 endfor &$
 endfor
 
@@ -214,14 +280,14 @@ phisto = BARPLOT(xbin, pdf,/current, layout=[1,3,2], title='Benin-Noah')
 
 
 ;;;STICK with CONTOUR;;;;;;;
-cormap2 = cormap2s
-map_ulx = emap_ulx & min_lon = map_ulx
-map_lry = emap_lry & min_lat = map_lry
-map_uly = emap_uly & max_lat = map_uly
-map_lrx = emap_lrx & max_lon = map_lrx
-mask = emask
-NX = eNX
-NY = eNY
+cormap2 = cormap2w
+map_ulx = wmap_ulx & min_lon = map_ulx
+map_lry = wmap_lry & min_lat = map_lry
+map_uly = wmap_uly & max_lat = map_uly
+map_lrx = wmap_lrx & max_lon = map_lrx
+mask = wmask
+NX = wNX
+NY = wNY
 
 shapefile = '/discover/nobackup/almcnall/GAUL_2013_2012_0.shapefiles/G2013_2012_0.shp'
 ;w = WINDOW(DIMENSIONS=[700,900]);works for EA 700x900
@@ -235,17 +301,24 @@ ysize=0.10
 index = [-0.1,0,0.3,0.5,0.7,0.9]
 ncolors = n_elements(index) 
 
-tmpgr = CONTOUR(cormap2*mask, $
+tmpgr = CONTOUR(cormap2, $
   FINDGEN(NX)*(xsize) + min_lon, FINDGEN(NY)*(ysize) + min_lat, $
   RGB_TABLE=64, /FILL, ASPECT_RATIO=1, BACKGROUND_COLOR='white', $
   C_VALUE=index, RGB_INDICES=FIX(FINDGEN(ncolors)*255./(ncolors-1)), $
   MAP_PROJECTION='Geographic', XSTYLE=1, YSTYLE=1, /OVERPLOT)
   tmpgr.mapgrid.linestyle = 6 & tmpgr.mapgrid.label_position = 0
-  cb = COLORBAR(TARGET=tmpgr, POSITION=[0.05,0.05,0.95,0.09],FONT_SIZE=11,/BORDER)
-  ;cb = COLORBAR(TARGET=tmpgr, POSITION=[0.05,0.2,0.95,0.25],FONT_SIZE=11,/BORDER)
+  ;cb = COLORBAR(TARGET=tmpgr, POSITION=[0.05,0.05,0.95,0.09],FONT_SIZE=11,/BORDER)
+  cb = COLORBAR(TARGET=tmpgr, POSITION=[0.05,0.2,0.95,0.25],FONT_SIZE=11,/BORDER)
   mc = MAPCONTINENTS(shapefile, /COUNTRIES,COLOR=[0,0,0],FILL_BACKGROUND=0,LIMIT=mlim)
   tmpgr.save,'/home/almcnall/figs4SciData/NOAH_SSEB_WA_1027.png'
 close
+
+;;try with image;;;;;looks similar for SSEB ETA...
+tmpgr = image(cormap2*mask, RGB_TABLE=64)
+tmpgr.mapgrid.linestyle = 6 & tmpgr.mapgrid.label_position = 0
+;cb = COLORBAR(TARGET=tmpgr, POSITION=[0.05,0.05,0.95,0.09],FONT_SIZE=11,/BORDER)
+cb = COLORBAR(TARGET=tmpgr, POSITION=[0.05,0.2,0.95,0.25],FONT_SIZE=11,/BORDER)
+mc = MAPCONTINENTS(shapefile, /COUNTRIES,COLOR=[0,0,0],FILL_BACKGROUND=0,LIMIT=mlim)
 
 ;-----------------------------------
 ;;;;SOUTHERN AFRICA FEB figure;;;;;
@@ -283,7 +356,7 @@ m=1 ;zero index 1=feb
 tmptr = CONTOUR(PONs[*,*,m,y]*mask,$
   FINDGEN(NX)*(xsize)+ min_lon, FINDGEN(NY)*(ysize)+min_lat, BACKGROUND_COLOR='WHITE', $
   RGB_TABLE=CT, /FILL, ASPECT_RATIO=1, Xstyle=1,Ystyle=1, /overplot, $
-  C_VALUE=index, RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors)) &$
+  C_VALUE=index, RGB_INDICES=FIX(FINDGEN(ncolors)*255./ncolors)) &$ ;am i using RGB_INDICES here?
   ct[108:108+36,*] = 200  &$
   tmptr.rgb_table=ct  &$
   tmptr.mapgrid.linestyle = 6 & tmptr.mapgrid.label_position = 0
@@ -305,6 +378,17 @@ tmptr.save,'/home/almcnall/FEB_SSEB_ETv2.png'
 ;-----------------------------------
 ;;;;East AFRICA most recent figure;;;;;
 ;-----------------------------------
+;;;STICK with CONTOUR;;;;;;;
+map_ulx = emap_ulx & min_lon = map_ulx
+map_lry = emap_lry & min_lat = map_lry
+map_uly = emap_uly & max_lat = map_uly
+map_lrx = emap_lrx & max_lon = map_lrx
+mask = emask
+NX = eNX
+NY = eNY
+
+shapefile = '/discover/nobackup/almcnall/GAUL_2013_2012_0.shapefiles/G2013_2012_0.shp'
+
 ;plots for individual months..used in the Usage notes section (move down)
 month = ['jan', 'feb', 'mar','apr','may','jun','jul','aug','sep','oct','nov','dec']
 ;use loop if you want to plot them all..
@@ -343,6 +427,11 @@ TOC
 ;position = x1,y1, x2, y2
 cb = colorbar(target=tmptr,ORIENTATION=0,TAPER=1,/BORDER, TITLE='ETa anomaly %', position=[0.3,0.14,0.7,0.17])
 tmptr.save,'/home/almcnall/DEC_SSEB_ET.png'
+
+
+
+;endfor
+TOC
 
 
 

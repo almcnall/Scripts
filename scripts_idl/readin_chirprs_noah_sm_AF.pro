@@ -11,7 +11,7 @@ pro readin_CHIRPRS_NOAH_SM
 ;.compile /home/source/mcnally/scripts_idl/get_nc.pro
 
 startyr = 1982 ;start with 1982 since no data in 1981
-endyr = 2016
+endyr = 2017
 nyrs = endyr-startyr+1
 
 ;re-do for all months

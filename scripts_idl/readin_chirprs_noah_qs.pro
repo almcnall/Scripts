@@ -63,7 +63,7 @@ Qsuf(where(Qsuf lt 0)) = !values.f_nan
 Qsub(where(Qsub lt 0)) = !values.f_nan
 
 RO = Qsuf+Qsub
-RO_CHIRPS01 = RO
-delvar, RO, Qsuf, Qsub, qs, qsb
+;RO_CHIRPS01 = RO
+delvar, Qsuf, Qsub, qs, qsb
 
 RO_annual = mean(RO_CHIRPS01, dimension = 3, /nan) & help, RO_annual

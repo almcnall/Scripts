@@ -11,7 +11,7 @@ pro readin_FLDAS_NOAH_SM
 rainfall = 'CHIRPS'
 ;if rainfall eq 'RFE2' then startyr = 2001 else startyr = 1982
 
-startyr = 1982
+startyr = 2017
 endyr = 2017
 nyrs = endyr-startyr+1
 
@@ -42,9 +42,9 @@ print, fname
 
 ;SMP = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
 SM01 = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
-SM02 = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
-SM03 = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
-SM04 = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
+;SM02 = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
+;SM03 = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
+;SM04 = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
 
 
 ;this loop reads in the selected months only
@@ -70,26 +70,26 @@ endif &$
   ;print, ifile, VOI &$
   SM01[*,*,i,yr-startyr] = Qs &$
   
-  VOI = 'SoilMoi10_40cm_tavg' &$
-  Qs = get_nc(VOI, ifile) &$
-  ;print, ifile, VOI &$
-  SM02[*,*,i,yr-startyr] = Qs &$
-    
-  VOI = 'SoilMoi40_100cm_tavg' &$
-  Qs = get_nc(VOI, ifile) &$
-  ;print, ifile, VOI &$
-  SM03[*,*,i,yr-startyr] = Qs &$
-  
-  VOI = 'SoilMoi100_200cm_tavg' &$  
-  Qs = get_nc(VOI, ifile) &$
-  ;print, ifile, VOI &$
-  SM04[*,*,i,yr-startyr] = Qs &$
+;  VOI = 'SoilMoi10_40cm_tavg' &$
+;  Qs = get_nc(VOI, ifile) &$
+;  ;print, ifile, VOI &$
+;  SM02[*,*,i,yr-startyr] = Qs &$
+;    
+;  VOI = 'SoilMoi40_100cm_tavg' &$
+;  Qs = get_nc(VOI, ifile) &$
+;  ;print, ifile, VOI &$
+;  SM03[*,*,i,yr-startyr] = Qs &$
+;  
+;  VOI = 'SoilMoi100_200cm_tavg' &$  
+;  Qs = get_nc(VOI, ifile) &$
+;  ;print, ifile, VOI &$
+;  SM04[*,*,i,yr-startyr] = Qs &$
 
 endfor &$
 endfor
 ;SMP(where(SMP lt 0)) = 0
-SM01(where(SM01 lt 0)) = 0
-SM02(where(SM02 lt 0)) = 0
+SM01(where(SM01 lt 0)) = !values.f_nan
+SM02(where(SM02 lt 0)) = 0 ;why did i set these to zero??
 SM03(where(SM03 lt 0)) = 0
 SM04(where(SM04 lt 0)) = 0
 
@@ -97,5 +97,5 @@ delvar, Qs
 
 ;convert to m3 per 10km2 pixel (how does this differ with VIC?)
 SMm3 = SM01*10+SM02*30+SM03*60+SM04*100
-delvar, SM01, SM02, SM03, SM04
+delvar, SM02, SM03, SM04
 SMtot_annual = mean(SMtot, dimension=3, /nan)

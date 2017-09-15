@@ -198,6 +198,9 @@ NY = temp[1]
 NZ = temp[2]
 
 tic
+startyr = 1982
+endyr = 2014
+nmos = 12
 ECVcube = fltarr(NX, NY, NMOS, NYRS)* !values.f_nan
 for yr = startyr, endyr do begin &$
   fileID = ncdf_open(strcompress(data_dirE+'CCISMv2.2_MONMEAN_AFR_'+string(yr)+'.nc', /remove_all)) &$

@@ -29,6 +29,7 @@ map_lry = params[5]
 
 ;;;;;;use hymap runoff vs. non-routed;;;;
 data_dir='/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_EA/post/'
+;data_dir='/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_SA/post/'
 ;data_dir='/discover/nobackup/projects/fame/MODEL_RUNS/NOAH_OUTPUT/daily/Noah33_CHIRPS_MERRA2_WA/post/'
 
 Rain = FLTARR(NX,NY,nmos,nyrs)*!values.f_nan
@@ -51,7 +52,7 @@ endif &$
 
 endfor &$
 endfor
-Rain(where(Rain lt 0)) = 0
+Rain(where(Rain lt 0)) = !values.f_nan
 
 delvar, Qs
 ;i use the mean in cdo but this could be changed to total if desired.

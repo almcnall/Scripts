@@ -3,6 +3,7 @@ pro clipSSEBtoEROS
 ;05/13/16 this script clips the monthly, continental Africa SSEB to the differnet EROS domains.
 ;moved from noahVsseb to its own script.
 ;01/15/17 update to include more recent EA, did not do SA or WA.
+;08/14/17 update script for the SSEBv4 (no longer PON, will need to compute). 
 ;
 ;;try reading in the SSEB data for east africa
 ;;first read one in to get the domain info for upper left x and y.

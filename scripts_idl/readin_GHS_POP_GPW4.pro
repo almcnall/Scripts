@@ -1,7 +1,7 @@
 pro readin_GHS_POP_GPW4
 
 ;12/5/16 readin narcisa's pop data and try to get it on the same grid as NOAH 294x348
-;
+;08/02/17 revisit to get the orignal GPW4 2000-2017 data. Did I already do this?
 
 .compile /home/almcnall/Scripts/scripts_idl/get_nc.pro
 .compile /home/almcnall/Scripts/scripts_idl/nve.pro

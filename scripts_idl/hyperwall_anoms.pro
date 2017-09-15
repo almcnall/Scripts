@@ -2,6 +2,14 @@ pro hyperwall_anoms
 
 ;;this is to make anomaly plots for the hyperwall
 
+startyr = 1982 ;start with 1982 since no data in 1981
+endyr = 2017
+nyrs = endyr-startyr+1
+
+;re-do for all months
+startmo = 1
+endmo = 12
+nmos = endmo - startmo+1
 ;;first calculate the monthly means for the different soil moisture layers (esp SM02)
 
 ;;from readin_chirps_noah_sm_AF.pro
@@ -10,7 +18,7 @@ help, smm3
 
 ;revisit when the runs are complete
 ;SM02clim = mean(sm02, dimension=4, /nan)
-SMm3clim = mean(smm3, dimension=4, /nan)
+SMm3clim = mean(smm3[*,*,*,0:34], dimension=4, /nan) ;just the 1982-2016 (not 2017)
 ;what if i mask before anomalies? the ocean will be zero
 SMclim = rebin(smm3clim,nx,ny,nmos,nyrs) & help, smclim
 SManom = Smm3-SMclim & help, SManom
@@ -137,22 +145,27 @@ endfor
  tifftemp = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/HYPERWALL/AF.tif' 
   temp = read_tiff(tifftemp,R,G,B,geotiff=g_tags)
   ;;write out for Jossy
-for y=33,34 do begin &$
+;2017-startyr
+sstart = 2009-startyr & print, sstart
+sstop = 2017-startyr & print, sstop
+for y=sstart,sstop do begin &$
   yr = y+1982 &$
   for mo =0, 11 do begin &$
     mon = STRING(format='(I2.2)', mo+1) &$
-    ;ofile = strcompress('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/HYPERWALL/AF_SOILSTORE_ANOM_751x801_'+string(yr)+string(mon)+'.tif', /remove_all) &$
-    ofile = strcompress('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/HYPERWALL/AF_SOILSTORE_751x801_'+string(yr)+string(mon)+'.tif', /remove_all) &$
+    ofile1 = strcompress('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/HYPERWALL/AF_SOILSTORE_ANOM_751x801_'+string(yr)+string(mon)+'.tif', /remove_all) &$
+    ofile2 = strcompress('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/HYPERWALL/AF_SOILSTORE_751x801_'+string(yr)+string(mon)+'.tif', /remove_all) &$
 
-    ;ogrid = reverse(SManom[*,*,mo,y]*mask,2) &$
-    ogrid = reverse(SMM3[*,*,mo,y],2) &$
+    ogrid1 = reverse(SManom[*,*,mo,y]*mask,2) &$
+    ogrid2 = reverse(SMM3[*,*,mo,y],2) &$
 
-    write_tiff, ofile,ogrid ,/FLOAT,geotiff=g_tags &$
+    write_tiff, ofile1,ogrid1 ,/FLOAT,geotiff=g_tags &$
+    write_tiff, ofile2,ogrid2 ,/FLOAT,geotiff=g_tags &$
+
     ;ofile = strcompress('/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/HYPERWALL/AF_SOILSTORE_ANOM_751x801_'+string(yr)+string(mon)+'.bin', /remove_all) &$
-    print, ofile &$
+    ;print, ofile &$
     ;openw,1,ofile &$
     ;writeu,1,SManom[*,*,mo,y]*mask &$
-    close,1 &$
+    ;close,1 &$
   endfor &$
 endfor
   

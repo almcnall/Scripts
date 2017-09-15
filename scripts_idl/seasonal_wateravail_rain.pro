@@ -8,25 +8,26 @@
 ;11/17/16 where was I? read in the runoff, preferably routed I think....what is the difference between surface water storage and flux?
 ;12/05/16 try out the multi-yr population data. I can use either storage term. I can stick with surface water for now.
 ;05/25/17 revist old code to work out example for upper tana basin that supplies Nairobi. Look for low streamflow on thika (before dam) and low TWS.
-
+;08/28/17 updated 18 and 24 month surface water anomaly (percent of mean) storage maps (flood + river storage)
 
 ;HELP, CMPPcube
 HELP, RO_CHIRPS01, RO_RFE01, smm3
+help, store_surf
 
 ;make a mask where if RO is greater than X std then it = x std. That should damp this el nino business.
 ;how do i plot how many stdev this el nino made go cray? 
 
 ;dims = size(RO_RFE01, /dimensions)
-dims = size(SMM3, /dimensions)
+dims = size(store_surf, /dimensions)
 nx = dims[0]
 ny = dims[1]
 nmos = dims[2]
-nyrs82 = n_elements(SMM3[0,0,0,*])
+nyrs82 = n_elements(store_surf[0,0,0,*])
 ;nyrs01 = n_elements(RO_RFE01[0,0,0,*])
 
 ;CMPPvect = reform(CMPPcube,NX,NY,nmos*nyrs) & help, CMPPvect
 ;ROvect01 = reform(RO_RFE01,NX,NY,nmos*nyrs01) & help, ROvect01
-ROvect82 = reform(SMM3,NX,NY,nmos*nyrs82) & help, ROvect82
+ROvect82 = reform(store_surf,NX,NY,nmos*nyrs82) & help, ROvect82
 
 ;plot upper tana basin
 
@@ -50,7 +51,7 @@ buffer = fltarr(nx, ny, n_elements(time))*!values.f_nan
 ;;CHIRPS
 ;;compute the 24 month moveing average. 
 tic
-TIME = [24];months
+TIME = [2];months
 ROC = fltarr(nx, ny, nmos*nyrs82, n_elements(time))*!values.f_nan
 buffer = fltarr(nx, ny, n_elements(time))*!values.f_nan
 
@@ -151,8 +152,8 @@ ysize=0.10
 index = [0,50,70,90,110,130,150];
 
 ncolors = n_elements(index) ;is this right or do i add some?
-mo = 9
-y=34
+mo = 6
+y=35
 ;tmpgr = CONTOUR(avgsmm3, $
 tmpgr = CONTOUR(CM_anom24cube[*,*,mo,y]*mask, $
   FINDGEN(NX)*(xsize) + min_lon, FINDGEN(NY)*(ysize) + min_lat, $

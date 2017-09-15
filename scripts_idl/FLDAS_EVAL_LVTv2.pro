@@ -7,7 +7,7 @@ pro FLDAS_EVAL_LVT
 ;5/5/2016 continuing mask effort after LDT issues.
 ;06/06/2016 revist to fix up figures for the paper. I need anom correlation for all domains.
 ;for paths on chg rain and different old plots see fldas_eval_lvtv1
-;10/21/2016 figures for revisions
+;10/21/2016 figures for revisions, where are the SSEB data?
 
 indir = '/discover/nobackup/almcnall/LIS7runs/LIS7_beta_test/LVT_test/'
 shapefile ='/discover/nobackup/almcnall/G2013_2012_0.shp' 
